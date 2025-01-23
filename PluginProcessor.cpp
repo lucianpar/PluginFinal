@@ -1,6 +1,27 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
+juce::AudioProcessorValueTreeState::ParameterLayout
+parameters() {
+    std::vector<std::unique_ptr<juce::RangedAudioParameter>> parameter_list;
+
+    parameter_list.push_back(std::make_unique<juce::AudioParameterFloat>(
+        "gain",
+        "Gain",
+        0.0,
+        1.0,
+        0.5));
+
+    parameter_list.push_back(std::make_unique<juce::AudioParameterFloat>(
+        "frequency",
+        "Frequency",
+        0.0,
+        1.0,
+        0.5));
+
+    return { parameter_list.begin(), parameter_list.end() };
+}
+
 //==============================================================================
 AudioPluginAudioProcessor::AudioPluginAudioProcessor()
      : AudioProcessor (BusesProperties()
@@ -10,7 +31,8 @@ AudioPluginAudioProcessor::AudioPluginAudioProcessor()
                       #endif
                        .withOutput ("Output", juce::AudioChannelSet::stereo(), true)
                      #endif
-                       )
+                       ),
+     apvts(*this, nullptr, "Parameters", parameters())
 {
 }
 
@@ -151,12 +173,15 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
         juce::ignoreUnused (channelData);
         // ..do something to the data...
     }
+
+    float v = apvts.getParameter("gain")->getValue();
+    float f = apvts.getParameter("frequency")->getValue();
 }
 
 //==============================================================================
 bool AudioPluginAudioProcessor::hasEditor() const
 {
-    return true; // (change this to false if you choose to not supply an editor)
+    return false; //return true; // (change this to false if you choose to not supply an editor)
 }
 
 juce::AudioProcessorEditor* AudioPluginAudioProcessor::createEditor()
