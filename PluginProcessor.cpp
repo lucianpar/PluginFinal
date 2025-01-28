@@ -38,16 +38,23 @@ parameters() {
     parameter_list.push_back(std::make_unique<juce::AudioParameterFloat>(
         "gain",
         "Gain",
+        -60.0,
         0.0,
-        1.0,
-        0.5));
+        -60.0));
 
     parameter_list.push_back(std::make_unique<juce::AudioParameterFloat>(
         "frequency",
         "Frequency",
         0.0,
+        127.0,
+        60.0));
+
+    parameter_list.push_back(std::make_unique<juce::AudioParameterFloat>(
+        "distortion",
+        "Distortion",
+        0.0,
         1.0,
-        0.5));
+        0.0));
 
     return { parameter_list.begin(), parameter_list.end() };
 }
@@ -198,15 +205,29 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     // Alternatively, you can process the samples with the channels
     // interleaved by keeping the same state.
 
-    ramp.frequency(2, getSampleRate());
+    float v = apvts.getParameter("gain")->getValue(); // (0, 1)
+    float f = apvts.getParameter("frequency")->getValue();
+    float t = apvts.getParameter("distortion")->getValue();
+
+    auto mtof = [](float midi) {
+        return 440 * pow(2, (midi - 69) / 12);
+    };
+
+    // (-f, 0). 0 is an amplitude of 1.
+    auto dbtoa = [](float db) {
+        return pow(10, db / 20);
+    };
+
+    ramp.frequency(mtof(f * 127), getSampleRate());
     for (int i = 0; i < buffer.getNumSamples(); ++i) {
-        float sample = ramp(); // get the next value of the ramp
+        float f = sin7(ramp()); // (-1, 1)
+        float d = tanh(5 * f); // distorted version
+        float mix = t * d + (1 - t) * f; // linear interpolation
+        float sample = mix * dbtoa(-60 * (1 - v)); // get the next value of the ramp
         buffer.addSample(0, i, sample);
         buffer.addSample(1, i, sample);
     }
 
-    float v = apvts.getParameter("gain")->getValue();
-    float f = apvts.getParameter("frequency")->getValue();
 }
 
 //==============================================================================
