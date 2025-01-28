@@ -6,6 +6,31 @@ double sin7(double x) {
     return x*(x*(x*(x*(x*(x*(194.27296-55.50656*x)-213.704224)+48.57816)+31.77344)+0.89816)-6.311936);
 }
 
+struct Ramp {
+    float value = 0;
+    float increment = 0; // normalized frequency
+
+    // called from the GUI
+    void frequency(float hertz, float samplerate) {
+        increment = hertz / samplerate;
+    }
+
+    // Called from processorBlock
+    float operator()() {
+        float v = value;
+
+        value += increment;
+        if (value >= 1.0) {
+            value -= 1.0;
+        }
+
+        return v;
+    }
+
+};
+
+Ramp ramp;
+
 juce::AudioProcessorValueTreeState::ParameterLayout
 parameters() {
     std::vector<std::unique_ptr<juce::RangedAudioParameter>> parameter_list;
@@ -172,11 +197,12 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     // the samples and the outer loop is handling the channels.
     // Alternatively, you can process the samples with the channels
     // interleaved by keeping the same state.
-    for (int channel = 0; channel < totalNumInputChannels; ++channel)
-    {
-        auto* channelData = buffer.getWritePointer (channel);
-        juce::ignoreUnused (channelData);
-        // ..do something to the data...
+
+    ramp.frequency(2, getSampleRate());
+    for (int i = 0; i < buffer.getNumSamples(); ++i) {
+        float sample = ramp(); // get the next value of the ramp
+        buffer.addSample(0, i, sample);
+        buffer.addSample(1, i, sample);
     }
 
     float v = apvts.getParameter("gain")->getValue();
