@@ -1,6 +1,11 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
+// expects x on (0, 1)
+double sin7(double x) {
+    return x*(x*(x*(x*(x*(x*(194.27296-55.50656*x)-213.704224)+48.57816)+31.77344)+0.89816)-6.311936);
+}
+
 juce::AudioProcessorValueTreeState::ParameterLayout
 parameters() {
     std::vector<std::unique_ptr<juce::RangedAudioParameter>> parameter_list;
