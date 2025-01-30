@@ -1,38 +1,8 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
-// expects x on (0, 1)
-double sin7(double x) {
-    return x*(x*(x*(x*(x*(x*(194.27296-55.50656*x)-213.704224)+48.57816)+31.77344)+0.89816)-6.311936);
-}
 
-struct Ramp {
-    float value = 0;
-    float increment = 0; // normalized frequency
-
-    // called from the GUI
-    void frequency(float hertz, float samplerate) {
-        increment = hertz / samplerate;
-    }
-
-    // Called from processorBlock
-    float operator()() {
-        float v = value;
-
-        value += increment;
-        if (value >= 1.0) {
-            value -= 1.0;
-        }
-
-        return v;
-    }
-
-};
-
-Ramp ramp;
-
-juce::AudioProcessorValueTreeState::ParameterLayout
-parameters() {
+juce::AudioProcessorValueTreeState::ParameterLayout parameters() {
     std::vector<std::unique_ptr<juce::RangedAudioParameter>> parameter_list;
 
     parameter_list.push_back(std::make_unique<juce::AudioParameterFloat>(
@@ -148,6 +118,15 @@ void AudioPluginAudioProcessor::prepareToPlay (double sampleRate, int samplesPer
     // Use this method as the place to do any pre-playback
     // initialisation that you need..
     juce::ignoreUnused (sampleRate, samplesPerBlock);
+
+    Ramp ramp2;
+    ramp2.frequency(440, static_cast<float>(getSampleRate()));
+    int length = static_cast<int>(getSampleRate() * 2); // 2 second sound clip
+    for (int i = 0; i < length; ++i) {
+        float amp = 1 - 1.0f * i / length;
+        amp = amp * amp * amp;
+        player.addSample(amp * static_cast<float>(sin7(ramp2())));
+    }
 }
 
 void AudioPluginAudioProcessor::releaseResources()
@@ -215,19 +194,19 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
 
     // (-f, 0). 0 is an amplitude of 1.
     auto dbtoa = [](float db) {
-        return pow(10, db / 20);
+        return powf(10, db / 20);
     };
 
-    ramp.frequency(mtof(f * 127), getSampleRate());
+    //ramp.frequency(mtof(f * 127), getSampleRate());
+    ramp.frequency(0.5, static_cast<float>(getSampleRate()));
     for (int i = 0; i < buffer.getNumSamples(); ++i) {
-        float f = sin7(ramp()); // (-1, 1)
+        float x = player(ramp()); // (-1, 1)
         float d = tanh(5 * f); // distorted version
-        float mix = t * d + (1 - t) * f; // linear interpolation
+        float mix = t * d + (1 - t) * x; // linear interpolation
         float sample = mix * dbtoa(-60 * (1 - v)); // get the next value of the ramp
         buffer.addSample(0, i, sample);
         buffer.addSample(1, i, sample);
     }
-
 }
 
 //==============================================================================

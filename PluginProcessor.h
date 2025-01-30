@@ -2,6 +2,8 @@
 
 #include <juce_audio_processors/juce_audio_processors.h>
 
+#include "Library.h"
+
 //==============================================================================
 class AudioPluginAudioProcessor final : public juce::AudioProcessor
 {
@@ -45,6 +47,12 @@ public:
 private:
     juce::AudioProcessorValueTreeState apvts;
 
+    Ramp ramp;
+    ClipPlayer player;
+
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AudioPluginAudioProcessor)
 };
+
+double sin7(double);
+juce::AudioProcessorValueTreeState::ParameterLayout parameters();

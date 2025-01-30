@@ -26,7 +26,8 @@ juce_add_plugin(AudioPluginExample
 target_sources(AudioPluginExample
     PRIVATE
         PluginEditor.cpp
-        PluginProcessor.cpp)
+        PluginProcessor.cpp
+        Library.cpp)
 
 target_compile_definitions(AudioPluginExample
     PUBLIC
