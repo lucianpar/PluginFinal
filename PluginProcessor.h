@@ -49,6 +49,8 @@ private:
 
     Ramp ramp;
     ClipPlayer player;
+    Timer timer;
+    KarplusStrong ks;
 
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AudioPluginAudioProcessor)

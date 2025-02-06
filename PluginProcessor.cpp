@@ -26,6 +26,13 @@ juce::AudioProcessorValueTreeState::ParameterLayout parameters() {
         1.0,
         0.0));
 
+    parameter_list.push_back(std::make_unique<juce::AudioParameterFloat>(
+        "rate",
+        "Rate",
+        0.0,
+        1.0,
+        0.0));
+
     return { parameter_list.begin(), parameter_list.end() };
 }
 
@@ -127,6 +134,8 @@ void AudioPluginAudioProcessor::prepareToPlay (double sampleRate, int samplesPer
         amp = amp * amp * amp;
         player.addSample(amp * static_cast<float>(sin7(ramp2())));
     }
+
+    timer.frequency(0.2, getSampleRate());
 }
 
 void AudioPluginAudioProcessor::releaseResources()
@@ -187,6 +196,7 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     float v = apvts.getParameter("gain")->getValue(); // (0, 1)
     float f = apvts.getParameter("frequency")->getValue();
     float t = apvts.getParameter("distortion")->getValue();
+    float r = apvts.getParameter("rate")->getValue();
 
     auto mtof = [](float midi) {
         return 440 * pow(2, (midi - 69) / 12);
@@ -199,11 +209,18 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
 
     //ramp.frequency(mtof(f * 127), getSampleRate());
     ramp.frequency(0.5, static_cast<float>(getSampleRate()));
+    timer.frequency(7 * r, getSampleRate());
     for (int i = 0; i < buffer.getNumSamples(); ++i) {
+        if (timer()) {
+            ks.pluck(mtof(f * 127), getSampleRate(), 0.87, t);
+        }
+        /*
         float x = player(ramp()); // (-1, 1)
         float d = tanh(5 * f); // distorted version
         float mix = t * d + (1 - t) * x; // linear interpolation
         float sample = mix * dbtoa(-60 * (1 - v)); // get the next value of the ramp
+        */
+        float sample = ks() * dbtoa(-60 * (1 - v)); // get the next value of the ramp
         buffer.addSample(0, i, sample);
         buffer.addSample(1, i, sample);
     }
