@@ -51,6 +51,8 @@ private:
     ClipPlayer player;
     Timer timer;
     KarplusStrong ks;
+    ShroederReverb reverb, reverb2;
+    DCblock dcblock;
 
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AudioPluginAudioProcessor)

@@ -136,6 +136,8 @@ void AudioPluginAudioProcessor::prepareToPlay (double sampleRate, int samplesPer
     }
 
     timer.frequency(0.2, getSampleRate());
+    reverb.configure(getSampleRate());
+    reverb2.configure(getSampleRate());
 }
 
 void AudioPluginAudioProcessor::releaseResources()
@@ -221,6 +223,7 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
         float sample = mix * dbtoa(-60 * (1 - v)); // get the next value of the ramp
         */
         float sample = ks() * dbtoa(-60 * (1 - v)); // get the next value of the ramp
+        sample = dcblock(reverb2(reverb(sample)));
         buffer.addSample(0, i, sample);
         buffer.addSample(1, i, sample);
     }
