@@ -3,6 +3,10 @@ project(AUDIO_PLUGIN_EXAMPLE VERSION 0.0.1)
 
 add_subdirectory(JUCE)
 
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
 juce_add_plugin(AudioPluginExample
     # VERSION ...                               # Set this if the plugin version is different to the project version
     # ICON_BIG ...                              # ICON_* arguments specify a path to an image file to use as an icon for the Standalone
@@ -29,6 +33,10 @@ target_sources(AudioPluginExample
         PluginProcessor.cpp
         Library.cpp)
 
+juce_generate_juce_header(AudioPluginExample)
+
+target_compile_options(AudioPluginExample PRIVATE "-Wno-float-equal")
+
 target_compile_definitions(AudioPluginExample
     PUBLIC
         # JUCE_WEB_BROWSER and JUCE_USE_CURL would be on by default, but you might not need them.
@@ -40,6 +48,8 @@ target_link_libraries(AudioPluginExample
     PRIVATE
         # AudioPluginData           # If we'd created a binary data target, we'd link to it here
         juce::juce_audio_utils
+        juce::juce_dsp
+        juce::juce_audio_formats
     PUBLIC
         juce::juce_recommended_config_flags
         juce::juce_recommended_lto_flags

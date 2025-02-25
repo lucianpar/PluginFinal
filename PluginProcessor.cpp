@@ -1,7 +1,6 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
-
 juce::AudioProcessorValueTreeState::ParameterLayout parameters() {
     std::vector<std::unique_ptr<juce::RangedAudioParameter>> parameter_list;
 
@@ -125,19 +124,27 @@ void AudioPluginAudioProcessor::prepareToPlay (double sampleRate, int samplesPer
     // Use this method as the place to do any pre-playback
     // initialisation that you need..
     juce::ignoreUnused (sampleRate, samplesPerBlock);
+    
+    ky::setPlaybackRate(getSampleRate());
 
-    Ramp ramp2;
-    ramp2.frequency(440, static_cast<float>(getSampleRate()));
-    int length = static_cast<int>(getSampleRate() * 2); // 2 second sound clip
-    for (int i = 0; i < length; ++i) {
-        float amp = 1 - 1.0f * i / length;
-        amp = amp * amp * amp;
-        player.addSample(amp * static_cast<float>(sin7(ramp2())));
+    reverb.configure();
+
+    convolution.reset();
+
+    juce::File file = juce::File::getSpecialLocation(juce::File::userDesktopDirectory).getChildFile("untitled.wav");
+    //juce::File file = juce::File::getSpecialLocation(juce::File::userDesktopDirectory).getChildFile("emt_140_bright_3.wav");
+    if (!file.exists()) {
+        std::cout << "File does not exist" << std::endl;
+        exit(1);
     }
+    
+    convolution.loadImpulseResponse(file, juce::dsp::Convolution::Stereo::yes, juce::dsp::Convolution::Trim::no, 0);
 
-    timer.frequency(0.2, getSampleRate());
-    reverb.configure(getSampleRate());
-    reverb2.configure(getSampleRate());
+    juce::dsp::ProcessSpec spec;
+    spec.sampleRate = sampleRate;
+    spec.maximumBlockSize = samplesPerBlock;
+    spec.numChannels = getTotalNumInputChannels();
+    convolution.prepare(spec);
 }
 
 void AudioPluginAudioProcessor::releaseResources()
@@ -200,33 +207,21 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     float t = apvts.getParameter("distortion")->getValue();
     float r = apvts.getParameter("rate")->getValue();
 
-    auto mtof = [](float midi) {
-        return 440 * pow(2, (midi - 69) / 12);
-    };
-
-    // (-f, 0). 0 is an amplitude of 1.
-    auto dbtoa = [](float db) {
-        return powf(10, db / 20);
-    };
-
-    //ramp.frequency(mtof(f * 127), getSampleRate());
-    ramp.frequency(0.5, static_cast<float>(getSampleRate()));
-    timer.frequency(7 * r, getSampleRate());
+    ramp.frequency(ky::mtof(f * 127));
+    timer.frequency(7 * r);
     for (int i = 0; i < buffer.getNumSamples(); ++i) {
         if (timer()) {
-            ks.pluck(mtof(f * 127), getSampleRate(), 0.87, t);
+            env.set(0.2, 0.5);
         }
-        /*
-        float x = player(ramp()); // (-1, 1)
-        float d = tanh(5 * f); // distorted version
-        float mix = t * d + (1 - t) * x; // linear interpolation
-        float sample = mix * dbtoa(-60 * (1 - v)); // get the next value of the ramp
-        */
-        float sample = ks() * dbtoa(-60 * (1 - v)); // get the next value of the ramp
-        sample = dcblock(reverb2(reverb(sample)));
+        float sample = env() * ky::sin7(ramp()) * ky::dbtoa(-60 * (1 - v));
+        //sample = reverb(sample);
+
         buffer.addSample(0, i, sample);
         buffer.addSample(1, i, sample);
     }
+
+    juce::dsp::AudioBlock<float> block(buffer);
+    convolution.process(juce::dsp::ProcessContextReplacing<float>(block));
 }
 
 //==============================================================================

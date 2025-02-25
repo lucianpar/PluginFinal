@@ -1,6 +1,6 @@
 #pragma once
 
-#include <juce_audio_processors/juce_audio_processors.h>
+#include <JuceHeader.h>
 
 #include "Library.h"
 
@@ -47,16 +47,15 @@ public:
 private:
     juce::AudioProcessorValueTreeState apvts;
 
-    Ramp ramp;
-    ClipPlayer player;
-    Timer timer;
-    KarplusStrong ks;
-    ShroederReverb reverb, reverb2;
-    DCblock dcblock;
+    ky::Ramp ramp;
+    ky::Timer timer;
+    ky::SchroederReverb reverb, reverb2;
+    ky::AttackDecay env;
+
+    juce::dsp::Convolution convolution;
 
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AudioPluginAudioProcessor)
 };
 
-double sin7(double);
 juce::AudioProcessorValueTreeState::ParameterLayout parameters();
