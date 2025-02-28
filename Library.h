@@ -6,9 +6,9 @@
 
 namespace ky {
 
-// expects x on (0, 1)
-inline double sin7(double x) {   
-    return x*(x*(x*(x*(x*(x*(194.27296-55.50656*x)-213.704224)+48.57816)+31.77344)+0.89816)-6.311936);                                                                              return x*(x*(x*(x*(x*(x*(194.27296-55.50656*x)-213.704224)+48.57816)+31.77344)+0.89816)-6.311936    );                                 
+inline float sin7(float x) {   
+    // expects x on (0, 1)
+    return x*(x*(x*(x*(x*(x*(194.27296f-55.50656f*x)-213.704224f)+48.57816f)+31.77344f)+0.89816f)-6.311936f);                                                                            
 } 
 
 inline float mtof(float midi) {
@@ -24,11 +24,8 @@ struct PlaybackRateObserver {
     PlaybackRateObserver* nextObserver{nullptr};
     virtual void onPlaybackRateChange(float samplerate);
     PlaybackRateObserver();
-    // virtual ~PlaybackRateObserver();
 };
 
-// "Subject" class forward declaration
-//
 class PlaybackRateSubject {
     PlaybackRateObserver* list{nullptr};
     PlaybackRateSubject() {}
@@ -311,15 +308,13 @@ class Line : public PlaybackRateObserver {
     }
 
     float operator()() {
-        // return the current value
-        // advance our current value toward the target value
-        // how much should the value advance?
-        
-        float v = _value;
-        
-        if (_value == _target) {
+        std::equal_to<float> foo;
+        if (foo(_value, _target)) {
+        //if (_value == _target) {
             return _value;
         }
+        
+        float v = _value;
 
         _value += _increment;
         
@@ -343,7 +338,8 @@ class Line : public PlaybackRateObserver {
     }
 
     bool done() {
-        return _value == _target;
+        std::equal_to<float> foo;
+        return foo(_value, _target);
     }
 };
 
@@ -397,8 +393,8 @@ class MassSpring : public PlaybackRateObserver {
         position = 1; // meters
         velocity = 0; // meters / second
 
-        damping = 0.5;
-        stiffness = 0.1;
+        damping = 0.5f;
+        stiffness = 0.1f;
     }
     float operator()() {
         float v = position;

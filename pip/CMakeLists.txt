@@ -4,5 +4,4 @@ add_subdirectory(JUCE)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
-
-juce_add_pip(PluckedStringsDemo.h)
+juce_add_pip(SimpleConvolution.h)

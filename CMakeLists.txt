@@ -26,7 +26,6 @@ juce_add_plugin(AudioPluginExample
     FORMATS AU VST3 Standalone                  # The formats to build. Other valid formats are: AAX Unity VST AU AUv3
     PRODUCT_NAME "Audio Plugin Example")        # The name of the final executable, which can differ from the target name
 
-
 target_sources(AudioPluginExample
     PRIVATE
         PluginEditor.cpp
@@ -34,8 +33,6 @@ target_sources(AudioPluginExample
         Library.cpp)
 
 juce_generate_juce_header(AudioPluginExample)
-
-target_compile_options(AudioPluginExample PRIVATE "-Wno-float-equal")
 
 target_compile_definitions(AudioPluginExample
     PUBLIC
@@ -49,7 +46,7 @@ target_link_libraries(AudioPluginExample
         # AudioPluginData           # If we'd created a binary data target, we'd link to it here
         juce::juce_audio_utils
         juce::juce_dsp
-        juce::juce_audio_formats
+        #juce::juce_audio_formats
     PUBLIC
         juce::juce_recommended_config_flags
         juce::juce_recommended_lto_flags

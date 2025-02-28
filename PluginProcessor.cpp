@@ -5,28 +5,28 @@ juce::AudioProcessorValueTreeState::ParameterLayout parameters() {
     std::vector<std::unique_ptr<juce::RangedAudioParameter>> parameter_list;
 
     parameter_list.push_back(std::make_unique<juce::AudioParameterFloat>(
-        "gain",
+        ParameterID { "gain",  1 },
         "Gain",
         -60.0,
         0.0,
         -60.0));
 
     parameter_list.push_back(std::make_unique<juce::AudioParameterFloat>(
-        "frequency",
+        ParameterID {"frequency", 1},
         "Frequency",
         0.0,
         127.0,
         60.0));
 
     parameter_list.push_back(std::make_unique<juce::AudioParameterFloat>(
-        "distortion",
+        ParameterID {"distortion", 1},
         "Distortion",
         0.0,
         1.0,
         0.0));
 
     parameter_list.push_back(std::make_unique<juce::AudioParameterFloat>(
-        "rate",
+        ParameterID {"rate", 1},
         "Rate",
         0.0,
         1.0,
@@ -125,7 +125,7 @@ void AudioPluginAudioProcessor::prepareToPlay (double sampleRate, int samplesPer
     // initialisation that you need..
     juce::ignoreUnused (sampleRate, samplesPerBlock);
     
-    ky::setPlaybackRate(getSampleRate());
+    ky::setPlaybackRate(static_cast<float>(getSampleRate()));
 
     reverb.configure();
 
@@ -142,8 +142,8 @@ void AudioPluginAudioProcessor::prepareToPlay (double sampleRate, int samplesPer
 
     juce::dsp::ProcessSpec spec;
     spec.sampleRate = sampleRate;
-    spec.maximumBlockSize = samplesPerBlock;
-    spec.numChannels = getTotalNumInputChannels();
+    spec.maximumBlockSize = static_cast<uint32>(samplesPerBlock);
+    spec.numChannels = static_cast<uint32>(getTotalNumOutputChannels());
     convolution.prepare(spec);
 }
 
@@ -204,14 +204,14 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
 
     float v = apvts.getParameter("gain")->getValue(); // (0, 1)
     float f = apvts.getParameter("frequency")->getValue();
-    float t = apvts.getParameter("distortion")->getValue();
+    //float t = apvts.getParameter("distortion")->getValue();
     float r = apvts.getParameter("rate")->getValue();
 
     ramp.frequency(ky::mtof(f * 127));
     timer.frequency(7 * r);
     for (int i = 0; i < buffer.getNumSamples(); ++i) {
         if (timer()) {
-            env.set(0.2, 0.5);
+            env.set(0.2f, 0.5f);
         }
         float sample = env() * ky::sin7(ramp()) * ky::dbtoa(-60 * (1 - v));
         //sample = reverb(sample);
@@ -227,7 +227,7 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
 //==============================================================================
 bool AudioPluginAudioProcessor::hasEditor() const
 {
-    return false; //return true; // (change this to false if you choose to not supply an editor)
+    return true; // (change this to false if you choose to not supply an editor)
 }
 
 juce::AudioProcessorEditor* AudioPluginAudioProcessor::createEditor()
