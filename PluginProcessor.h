@@ -1,6 +1,7 @@
 #pragma once
 
 #include <JuceHeader.h>
+#include <juce_dsp/juce_dsp.h>
 
 #include "Library.h"
 
@@ -57,7 +58,13 @@ class AudioPluginAudioProcessor final : public juce::AudioProcessor {
   ky::AttackDecay env;
   ky::DelayLine delayLine;
   ky::DelayLine delayLine2;
+  float currentSampleRate;
+  float smoothedSamplesAgo = 0.0f;
+  float smoothedSamplesAgo2 = 0.0f;  // For second delay line
   // juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::Linear> mDelayLine{44100};
+
+   juce::SmoothedValue<float, juce::ValueSmoothingTypes::Linear> smoothedDelay;
+  juce::SmoothedValue<float, juce::ValueSmoothingTypes::Linear> smoothedDelay2;
 
   std::unique_ptr<ky::ClipPlayer> player;
   // juce::dsp::Convolution convolution;

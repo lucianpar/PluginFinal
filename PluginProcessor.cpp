@@ -106,6 +106,11 @@ void AudioPluginAudioProcessor::prepareToPlay(double sampleRate,
   size_t maxDelaySamples = static_cast<size_t>(2.0 * sampleRate);
   delayLine.resize(maxDelaySamples);
   delayLine2.resize(maxDelaySamples);
+
+  smoothedDelay.reset(sampleRate, 0.05);  // 50ms smoothing
+  smoothedDelay2.reset(sampleRate, 0.05);
+
+  currentSampleRate = sampleRate;
   
 
 
@@ -147,68 +152,62 @@ bool AudioPluginAudioProcessor::isBusesLayoutSupported(
 
 void AudioPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
                                              juce::MidiBuffer& midiMessages) {
-  juce::ignoreUnused(midiMessages);
+    juce::ignoreUnused(midiMessages);
+    juce::ScopedNoDenormals noDenormals;
 
-  juce::ScopedNoDenormals noDenormals;
-  auto totalNumInputChannels = getTotalNumInputChannels();
-  auto totalNumOutputChannels = getTotalNumOutputChannels();
-  for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
-    buffer.clear(i, 0, buffer.getNumSamples());
-    
-  
-float v = apvts.getParameter("gain")->getValue();  // (0, 1)
-float f = apvts.getParameter("frequency")->getValue();
-// float t = apvts.getParameter("distortion")->getValue();
-float r = apvts.getParameter("rate")->getValue();
-float d = apvts.getParameter("delay")->getValue();
-float d2 = apvts.getParameter("delay2")->getValue();
+    auto totalNumInputChannels = getTotalNumInputChannels();
+    auto totalNumOutputChannels = getTotalNumOutputChannels();
+    for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
+        buffer.clear(i, 0, buffer.getNumSamples());
 
-  
+    float v = apvts.getParameter("gain")->getValue();
+    float f = apvts.getParameter("frequency")->getValue();
+    float r = apvts.getParameter("rate")->getValue();
+    float d = apvts.getParameter("delay")->getValue();
+    float d2 = apvts.getParameter("delay2")->getValue();
 
-  // auto thing = this->buffer.exchange(nullptr, std::memory_order_acq_rel);
+    ramp.frequency(ky::mtof(f * 127));
+    timer.frequency(7 * r);
 
-  ramp.frequency(ky::mtof(f * 127));
-  timer.frequency(7 * r);
+    // ✅ Set new target values for smoothing (in samples)
+    smoothedDelay.setTargetValue(d * (0.5f * currentSampleRate));
+    smoothedDelay2.setTargetValue(d2 * (0.5f * currentSampleRate));
 
-  float delaySamples = d * (0.5f * 44100);  // Normalize to 0 - 0.5 sec
-  float delaySamples2 = d2 * (0.5f * 44100);
+    for (int i = 0; i < buffer.getNumSamples(); ++i) {
+        if (timer()) {
+            env.set(0.05f, 0.3f);
+        }
 
-  delaySamples = std::min(delaySamples, static_cast<float>(delayLine.size() - 1)); //avoid out of bounds memory access
-  delaySamples2 = std::min(delaySamples, static_cast<float>(delayLine.size() - 1));
-  //ramp.frequency();
-  for (int i = 0; i < buffer.getNumSamples(); ++i) {
-    if (timer()) {
-      env.set(0.05f, 0.3f);
+        float sample = env() * ky::sin7(ramp()) * ky::dbtoa(-60 * (1 - v));
+        sample = reverb(sample);
+
+        // ✅ Ramp delay values smoothly per sample
+        float safeDelaySamples = std::clamp(smoothedDelay.getNextValue(), 1.0f, static_cast<float>(delayLine.size() - 1));
+        float safeDelaySamples2 = std::clamp(smoothedDelay2.getNextValue(), 1.0f, static_cast<float>(delayLine2.size() - 1));
+
+        float delayedSample = delayLine.read(safeDelaySamples);
+        float delayedSample2 = delayLine2.read(safeDelaySamples2);
+
+        // Write current sample into the delay line
+        delayLine.write(sample);
+        delayLine2.write(sample);
+
+        float leftOutput = (0.5f * sample) + (0.5f * delayedSample);
+        float rightOutput = (0.5f * sample) + (0.5f * delayedSample2);
+
+        buffer.addSample(0, i, leftOutput);
+        buffer.addSample(1, i, rightOutput);
     }
-    float sample = env() * ky::sin7(ramp()) * ky::dbtoa(-60 * (1 - v));
-    sample = reverb(sample);
-
-    // float sample = player ? player->operator()(ramp()) : 0;
-
-    //this section is where karl adds info to buffer  
-     // Ensure delaySamples is within the buffer size
-    // float delaySamples = d * (0.5f * 44100);  // Normalize to 0 - 0.5 sec
-    // float delaySamples2 = d2 * (0.5f * 44100);
-
-    // delaySamples = std::min(delaySamples, static_cast<float>(delayLine.size() - 1)); // Avoid out-of-bounds access
-
-    float delayedSample = delayLine.read(delaySamples);  // Read from delay line
-    float delayedSample2 = delayLine2.read(delaySamples2);
-    delayLine.write(sample);  // Write current sample into delay line
-    delayLine2.write(sample);
-
-    // Mix Dry & Wet Signal 
-    // float outputSample = (0.5f * sample) + (0.25f * delayedSample)+(0.25f * delayedSample2);
-    float leftOutput = (0.5f * sample) + (0.5f * delayedSample);
-    float rightOutput = (0.5f * sample) + (0.5f * delayedSample2);
-
-    buffer.addSample(0, i, leftOutput);
-    buffer.addSample(1, i, rightOutput);
-  }
-
-  juce::dsp::AudioBlock<float> block(buffer);
-  // convolution.process(juce::dsp::ProcessContextReplacing<float>(block));
 }
+
+
+
+
+
+
+ //juce::dsp::AudioBlock<float> block(buffer);
+  // convolution.process(juce::dsp::ProcessContextReplacing<float>(block));
+
 
 void AudioPluginAudioProcessor::setBuffer(
     std::unique_ptr<juce::AudioBuffer<float>> buffer) {

@@ -169,7 +169,9 @@ class DelayLine {
     next = (1 + next) % data.size();
   }
 
-  float read(float samples_ago) { return data(next - samples_ago); }
+  float read(float samples_ago) { 
+    float readIndex = static_cast<float>(next) - samples_ago;
+    return data(readIndex); }
 };
 
 class KarplusStrong : public PlaybackRateObserver {
