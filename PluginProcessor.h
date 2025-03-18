@@ -47,15 +47,20 @@ class AudioPluginAudioProcessor final : public juce::AudioProcessor {
 
   juce::AudioProcessorValueTreeState apvts;
   // std::atomic<juce::AudioBuffer<float>*> buffer;
+  // juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::Linear> mDelayLine{44100};
+  
 
  private:
   ky::Ramp ramp;
   ky::Timer timer;
   ky::SchroederReverb reverb, reverb2;
   ky::AttackDecay env;
+  ky::DelayLine delayLine;
+  ky::DelayLine delayLine2;
+  // juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::Linear> mDelayLine{44100};
 
   std::unique_ptr<ky::ClipPlayer> player;
-  juce::dsp::Convolution convolution;
+  // juce::dsp::Convolution convolution;
 
   //==============================================================================
   JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(AudioPluginAudioProcessor)

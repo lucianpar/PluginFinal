@@ -22,6 +22,8 @@ class AudioPluginAudioProcessorEditor final
   juce::Slider frequencySlider;
   juce::Slider distortionSlider;
   juce::Slider rateSlider;
+  juce::Slider delaySlider;
+  juce::Slider delaySlider2;
   std::vector<
       std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>>
       attachment;

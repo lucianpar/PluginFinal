@@ -20,11 +20,18 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor(
   attachment.push_back(
       std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
           processorRef.apvts, "rate", rateSlider));
+  attachment.push_back(
+      std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
+          processorRef.apvts, "delay", delaySlider));
+  attachment.push_back(
+      std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
+          processorRef.apvts, "delay2", delaySlider2));
 
   addAndMakeVisible(gainSlider);
   addAndMakeVisible(frequencySlider);
   addAndMakeVisible(distortionSlider);
   addAndMakeVisible(rateSlider);
+  addAndMakeVisible(delaySlider);
 
   chooser = std::make_unique<juce::FileChooser>(
       "Select a file to open...",
@@ -75,4 +82,6 @@ void AudioPluginAudioProcessorEditor::resized() {
   frequencySlider.setBounds(area.removeFromTop(height));
   distortionSlider.setBounds(area.removeFromTop(height));
   rateSlider.setBounds(area.removeFromTop(height));
+  delaySlider.setBounds(area.removeFromTop(height));
+  delaySlider2.setBounds(area.removeFromTop(height));
 }

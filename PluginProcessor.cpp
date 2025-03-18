@@ -12,10 +12,12 @@ juce::AudioProcessorValueTreeState::ParameterLayout parameters() {
       ParameterID{"frequency", 1}, "Frequency", 0.0, 127.0, 60.0));
 
   parameter_list.push_back(std::make_unique<juce::AudioParameterFloat>(
-      ParameterID{"distortion", 1}, "Distortion", 0.0, 1.0, 0.0));
+      ParameterID{"rate", 1}, "Rate", 0.0, 1.0, 0.0));
 
   parameter_list.push_back(std::make_unique<juce::AudioParameterFloat>(
-      ParameterID{"rate", 1}, "Rate", 0.0, 1.0, 0.0));
+      ParameterID{"delay", 1}, "Delay", 0.0, 2.0, 0.0));
+  parameter_list.push_back(std::make_unique<juce::AudioParameterFloat>(
+      ParameterID{"delay2", 1}, "Delay2", 0.0, 2.0, 0.0));
 
   return {parameter_list.begin(), parameter_list.end()};
 }
@@ -100,26 +102,32 @@ void AudioPluginAudioProcessor::prepareToPlay(double sampleRate,
 
   reverb.configure();
 
-  convolution.reset();
+  // mDelayLine.setMaximumDelayInSamples(static_cast<int>(sampleRate));
+  size_t maxDelaySamples = static_cast<size_t>(2.0 * sampleRate);
+  delayLine.resize(maxDelaySamples);
+  delayLine2.resize(maxDelaySamples);
+  
 
-  juce::File file =
-      juce::File::getSpecialLocation(juce::File::userDesktopDirectory)
-          .getChildFile("untitled.wav");
+  //convolution.reset();
+
+  // juce::File file =
+  //     juce::File::getSpecialLocation(juce::File::userDesktopDirectory)
+  //         .getChildFile("untitled.wav");
   // juce::File file =
   // juce::File::getSpecialLocation(juce::File::userDesktopDirectory).getChildFile("emt_140_bright_3.wav");
-  if (!file.exists()) {
-    std::cout << "File does not exist" << std::endl;
-    exit(1);
-  }
+  // if (!file.exists()) {
+  //   std::cout << "File does not exist" << std::endl;
+  //   exit(1);
+  // }
 
-  convolution.loadImpulseResponse(file, juce::dsp::Convolution::Stereo::yes,
-                                  juce::dsp::Convolution::Trim::no, 0);
+  // convolution.loadImpulseResponse(file, juce::dsp::Convolution::Stereo::yes,
+  //                                 juce::dsp::Convolution::Trim::no, 0);
 
   juce::dsp::ProcessSpec spec;
   spec.sampleRate = sampleRate;
   spec.maximumBlockSize = static_cast<uint32>(samplesPerBlock);
   spec.numChannels = static_cast<uint32>(getTotalNumOutputChannels());
-  convolution.prepare(spec);
+  //convolution.prepare(spec);
 }
 
 void AudioPluginAudioProcessor::releaseResources() {
@@ -160,34 +168,58 @@ void AudioPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
   auto totalNumOutputChannels = getTotalNumOutputChannels();
   for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
     buffer.clear(i, 0, buffer.getNumSamples());
-
-  /*
+    
+  
 float v = apvts.getParameter("gain")->getValue();  // (0, 1)
 float f = apvts.getParameter("frequency")->getValue();
 // float t = apvts.getParameter("distortion")->getValue();
 float r = apvts.getParameter("rate")->getValue();
-  */
+float d = apvts.getParameter("delay")->getValue();
+float d2 = apvts.getParameter("delay")->getValue();
+
+  
 
   // auto thing = this->buffer.exchange(nullptr, std::memory_order_acq_rel);
 
-  // ramp.frequency(ky::mtof(f * 127));
-  // timer.frequency(7 * r);
-  ramp.frequency(0.3f);
+  ramp.frequency(ky::mtof(f * 127));
+  timer.frequency(7 * r);
+
+  float delaySamples = d * (0.5f * 44100);  // Normalize to 0 - 0.5 sec
+  float delaySamples2 = 2 * (0.5f * 44100);
+
+  delaySamples = std::min(delaySamples, static_cast<float>(delayLine.size() - 1)); //avoid out of bounds memory access
+  delaySamples2 = std::min(delaySamples, static_cast<float>(delayLine.size() - 1));
+  //ramp.frequency();
   for (int i = 0; i < buffer.getNumSamples(); ++i) {
-    // if (timer()) {
-    //   env.set(0.05f, 0.3f);
-    // }
-    // float sample = env() * ky::sin7(ramp()) * ky::dbtoa(-60 * (1 - v));
-    //  sample = reverb(sample);
+    if (timer()) {
+      env.set(0.05f, 0.3f);
+    }
+    float sample = env() * ky::sin7(ramp()) * ky::dbtoa(-60 * (1 - v));
+    sample = reverb(sample);
 
-    float sample = player ? player->operator()(ramp()) : 0;
+    // float sample = player ? player->operator()(ramp()) : 0;
 
-    buffer.addSample(0, i, sample);
-    buffer.addSample(1, i, sample);
+    //this section is where karl adds info to buffer  
+     // Ensure delaySamples is within the buffer size
+    // float delaySamples = d * (0.5f * 44100);  // Normalize to 0 - 0.5 sec
+    // float delaySamples2 = d2 * (0.5f * 44100);
+
+    // delaySamples = std::min(delaySamples, static_cast<float>(delayLine.size() - 1)); // Avoid out-of-bounds access
+
+    float delayedSample = delayLine.read(delaySamples);  // Read from delay line
+    float delayedSample2 = delayLine2.read(delaySamples2);
+    delayLine.write(sample);  // Write current sample into delay line
+    delayLine2.write(sample);
+
+    // Mix Dry & Wet Signal (50% each)
+    float outputSample = (0.5f * sample) + (0.25f * delayedSample)+(0.25f * delayedSample2);
+
+    buffer.addSample(0, i, outputSample);
+    buffer.addSample(1, i, outputSample);
   }
 
   juce::dsp::AudioBlock<float> block(buffer);
-  convolution.process(juce::dsp::ProcessContextReplacing<float>(block));
+  // convolution.process(juce::dsp::ProcessContextReplacing<float>(block));
 }
 
 void AudioPluginAudioProcessor::setBuffer(
@@ -203,7 +235,7 @@ void AudioPluginAudioProcessor::setBuffer(
     }
   }
 
-  player = std::move(b);
+  //player = std::move(b);
 }
 
 bool AudioPluginAudioProcessor::hasEditor() const {
