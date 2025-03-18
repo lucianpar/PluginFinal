@@ -78,7 +78,7 @@ void AudioPluginAudioProcessorEditor::paint(juce::Graphics& g) {
 void AudioPluginAudioProcessorEditor::resized() {
   auto area = getLocalBounds();
   auto height = 40;
-  //openButton.setBounds(area.removeFromTop(height));
+  openButton.setBounds(area.removeFromTop(height));
   gainSlider.setBounds(area.removeFromTop(height));
   frequencySlider.setBounds(area.removeFromTop(height));
   //distortionSlider.setBounds(area.removeFromTop(height));

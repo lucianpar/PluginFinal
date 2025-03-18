@@ -107,6 +107,9 @@ void AudioPluginAudioProcessor::prepareToPlay(double sampleRate,
   delayLine.resize(maxDelaySamples);
   delayLine2.resize(maxDelaySamples);
 
+  size_t bufferSize = static_cast<size_t>(0.3 * sampleRate);  // 0.3 seconds of buffer
+  slicer.initialize(bufferSize);  // ✅ Initialize GranularSlicer with buffer size
+
   smoothedDelay.reset(sampleRate, 0.05);  // 50ms smoothing
   smoothedDelay2.reset(sampleRate, 0.05);
 
@@ -169,9 +172,16 @@ void AudioPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
     ramp.frequency(ky::mtof(f * 127));
     timer.frequency(7 * r);
 
-    // ✅ Set new target values for smoothing (in samples)
+    // Smoother ramping for delay time
     smoothedDelay.setTargetValue(d * (0.5f * currentSampleRate));
     smoothedDelay2.setTargetValue(d2 * (0.5f * currentSampleRate));
+
+    // Smoothing factor for grain start offset (prevents sudden jumps)
+    static float smoothedOffset = 0.0f;
+    float targetOffset = r * (0.5f * currentSampleRate);  // Example: Modify grain start based on rate
+    smoothedOffset = 0.9f * smoothedOffset + 0.1f * targetOffset;  
+
+    slicer.setStartOffset(smoothedOffset);  // ✅ Apply smoothing to grain start
 
     for (int i = 0; i < buffer.getNumSamples(); ++i) {
         if (timer()) {
@@ -181,24 +191,35 @@ void AudioPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
         float sample = env() * ky::sin7(ramp()) * ky::dbtoa(-60 * (1 - v));
         sample = reverb(sample);
 
-        // ✅ Ramp delay values smoothly per sample
-        float safeDelaySamples = std::clamp(smoothedDelay.getNextValue(), 1.0f, static_cast<float>(delayLine.size() - 1));
-        float safeDelaySamples2 = std::clamp(smoothedDelay2.getNextValue(), 1.0f, static_cast<float>(delayLine2.size() - 1));
+        // writes sample into the granular slicer. planning to change how this works 
+        slicer.write(sample);
 
-        float delayedSample = delayLine.read(safeDelaySamples);
-        float delayedSample2 = delayLine2.read(safeDelaySamples2);
+        // Process the grain with additional smoothing for playback
+        float grainSample = slicer.processGrain();
 
-        // Write current sample into the delay line
+        // Acrossfaid - i think this is working i might chang it
+        static float prevGrainSample = 0.0f;
+        float smoothGrain = 0.95f * prevGrainSample + 0.05f * grainSample;
+        prevGrainSample = smoothGrain;
+
+        // feeding info into my left and right delay line. raw info into 1 and grain slice into the other. this basically doesnt change anything the way it is currently set up
         delayLine.write(sample);
-        delayLine2.write(sample);
+        delayLine2.write(smoothGrain);
 
-        float leftOutput = (0.5f * sample) + (0.5f * delayedSample);
-        float rightOutput = (0.5f * sample) + (0.5f * delayedSample2);
+        //more smoothing
+        float delayedSample = delayLine.read(smoothedDelay.getNextValue());
+        float delayedSample2 = delayLine2.read(smoothedDelay2.getNextValue());
+
+        
+        float leftOutput = (sample * 0.5f) + (delayedSample * 0.25f);
+        float rightOutput = (sample * 0.5f) + (delayedSample2 * 0.25f);
 
         buffer.addSample(0, i, leftOutput);
         buffer.addSample(1, i, rightOutput);
     }
 }
+
+
 
 
 
