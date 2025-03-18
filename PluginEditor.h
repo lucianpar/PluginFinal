@@ -20,7 +20,7 @@ class AudioPluginAudioProcessorEditor final
   AudioPluginAudioProcessor& processorRef;
   juce::Slider gainSlider;
   juce::Slider frequencySlider;
-  juce::Slider distortionSlider;
+  //juce::Slider distortionSlider;
   juce::Slider rateSlider;
   juce::Slider delaySlider;
   juce::Slider delaySlider2;

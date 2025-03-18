@@ -14,9 +14,9 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor(
   attachment.push_back(
       std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
           processorRef.apvts, "frequency", frequencySlider));
-  attachment.push_back(
-      std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
-          processorRef.apvts, "distortion", distortionSlider));
+  // attachment.push_back(
+  //     std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
+  //         processorRef.apvts, "distortion", distortionSlider));
   attachment.push_back(
       std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
           processorRef.apvts, "rate", rateSlider));
@@ -29,9 +29,10 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor(
 
   addAndMakeVisible(gainSlider);
   addAndMakeVisible(frequencySlider);
-  addAndMakeVisible(distortionSlider);
+  //addAndMakeVisible(distortionSlider);
   addAndMakeVisible(rateSlider);
   addAndMakeVisible(delaySlider);
+  addAndMakeVisible(delaySlider2);
 
   chooser = std::make_unique<juce::FileChooser>(
       "Select a file to open...",
@@ -77,10 +78,10 @@ void AudioPluginAudioProcessorEditor::paint(juce::Graphics& g) {
 void AudioPluginAudioProcessorEditor::resized() {
   auto area = getLocalBounds();
   auto height = 40;
-  openButton.setBounds(area.removeFromTop(height));
+  //openButton.setBounds(area.removeFromTop(height));
   gainSlider.setBounds(area.removeFromTop(height));
   frequencySlider.setBounds(area.removeFromTop(height));
-  distortionSlider.setBounds(area.removeFromTop(height));
+  //distortionSlider.setBounds(area.removeFromTop(height));
   rateSlider.setBounds(area.removeFromTop(height));
   delaySlider.setBounds(area.removeFromTop(height));
   delaySlider2.setBounds(area.removeFromTop(height));

@@ -108,20 +108,6 @@ void AudioPluginAudioProcessor::prepareToPlay(double sampleRate,
   delayLine2.resize(maxDelaySamples);
   
 
-  //convolution.reset();
-
-  // juce::File file =
-  //     juce::File::getSpecialLocation(juce::File::userDesktopDirectory)
-  //         .getChildFile("untitled.wav");
-  // juce::File file =
-  // juce::File::getSpecialLocation(juce::File::userDesktopDirectory).getChildFile("emt_140_bright_3.wav");
-  // if (!file.exists()) {
-  //   std::cout << "File does not exist" << std::endl;
-  //   exit(1);
-  // }
-
-  // convolution.loadImpulseResponse(file, juce::dsp::Convolution::Stereo::yes,
-  //                                 juce::dsp::Convolution::Trim::no, 0);
 
   juce::dsp::ProcessSpec spec;
   spec.sampleRate = sampleRate;
@@ -175,7 +161,7 @@ float f = apvts.getParameter("frequency")->getValue();
 // float t = apvts.getParameter("distortion")->getValue();
 float r = apvts.getParameter("rate")->getValue();
 float d = apvts.getParameter("delay")->getValue();
-float d2 = apvts.getParameter("delay")->getValue();
+float d2 = apvts.getParameter("delay2")->getValue();
 
   
 
@@ -185,7 +171,7 @@ float d2 = apvts.getParameter("delay")->getValue();
   timer.frequency(7 * r);
 
   float delaySamples = d * (0.5f * 44100);  // Normalize to 0 - 0.5 sec
-  float delaySamples2 = 2 * (0.5f * 44100);
+  float delaySamples2 = d2 * (0.5f * 44100);
 
   delaySamples = std::min(delaySamples, static_cast<float>(delayLine.size() - 1)); //avoid out of bounds memory access
   delaySamples2 = std::min(delaySamples, static_cast<float>(delayLine.size() - 1));
@@ -211,11 +197,13 @@ float d2 = apvts.getParameter("delay")->getValue();
     delayLine.write(sample);  // Write current sample into delay line
     delayLine2.write(sample);
 
-    // Mix Dry & Wet Signal (50% each)
-    float outputSample = (0.5f * sample) + (0.25f * delayedSample)+(0.25f * delayedSample2);
+    // Mix Dry & Wet Signal 
+    // float outputSample = (0.5f * sample) + (0.25f * delayedSample)+(0.25f * delayedSample2);
+    float leftOutput = (0.5f * sample) + (0.5f * delayedSample);
+    float rightOutput = (0.5f * sample) + (0.5f * delayedSample2);
 
-    buffer.addSample(0, i, outputSample);
-    buffer.addSample(1, i, outputSample);
+    buffer.addSample(0, i, leftOutput);
+    buffer.addSample(1, i, rightOutput);
   }
 
   juce::dsp::AudioBlock<float> block(buffer);
