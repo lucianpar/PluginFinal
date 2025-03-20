@@ -74,7 +74,7 @@ class AudioPluginAudioProcessor final : public juce::AudioProcessor {
 
   //==============================================================================
   JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(AudioPluginAudioProcessor)
-  GranularSlicer slicer; 
+  //GranularSlicer slicer; 
 };
 
 juce::AudioProcessorValueTreeState::ParameterLayout parameters();

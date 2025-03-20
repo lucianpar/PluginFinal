@@ -18,6 +18,10 @@ juce::AudioProcessorValueTreeState::ParameterLayout parameters() {
       ParameterID{"delay", 1}, "Delay", 0.0, 2.0, 0.0));
   parameter_list.push_back(std::make_unique<juce::AudioParameterFloat>(
       ParameterID{"delay2", 1}, "Delay2", 0.0, 2.0, 0.0));
+  parameter_list.push_back(std::make_unique<juce::AudioParameterFloat>(
+      ParameterID{"grainLength", 1}, "grainLength", 0.0, 2.0, 0.0));
+      parameter_list.push_back(std::make_unique<juce::AudioParameterFloat>(
+      ParameterID{"grainSpeed", 1}, "grainSpeed", 0.0, 4.0, 0.0));
 
   return {parameter_list.begin(), parameter_list.end()};
 }
@@ -107,8 +111,8 @@ void AudioPluginAudioProcessor::prepareToPlay(double sampleRate,
   delayLine.resize(maxDelaySamples);
   delayLine2.resize(maxDelaySamples);
 
-  size_t bufferSize = static_cast<size_t>(0.3 * sampleRate);  // 0.3 seconds of buffer
-  slicer.initialize(bufferSize);  // ✅ Initialize GranularSlicer with buffer size
+  // size_t bufferSize = static_cast<size_t>(1 * sampleRate);  // 0.3 seconds of buffer
+  // slicer.initialize(bufferSize);  // ✅ Initialize GranularSlicer with buffer size
 
   smoothedDelay.reset(sampleRate, 0.05);  // 50ms smoothing
   smoothedDelay2.reset(sampleRate, 0.05);
@@ -168,6 +172,11 @@ void AudioPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
     float r = apvts.getParameter("rate")->getValue();
     float d = apvts.getParameter("delay")->getValue();
     float d2 = apvts.getParameter("delay2")->getValue();
+    float gLen = apvts.getParameter("grainLength")->getValue();
+    float gSpeed = apvts.getParameter("grainSpeed")->getValue();
+    //add grain params
+    
+    //gStartSpray
 
     // ramp.frequency(ky::mtof(f * 127));
     // timer.frequency(7 * r);
@@ -181,7 +190,7 @@ void AudioPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
     //trigger.frequency(5.0);
 
     //ramp for clip player
-    ramp.frequency(0.3f);
+    ramp.frequency(0.1f);
 
     for (int i = 0; i < buffer.getNumSamples(); ++i) {
         if (timer()) {
@@ -201,12 +210,14 @@ void AudioPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
 
         //buffer.addSample(0, i, leftOutput);
         //buffer.addSample(1, i, rightOutput);
+
+        //when trigger happens, add a grain at that buffer position
         if (trigger()) {
           if (intermittency() > 0.8) break;
-          granulator.add(where(), 0.1f, 2.0f * wobble());
+          granulator.add(where(), gLen, 1.0f * gSpeed);
         }
     
-
+        float source = sample;
         float x = granulator();
         delayLine.write(x);
         delayLine2.write(x);
@@ -215,11 +226,11 @@ void AudioPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
         float delayedSample = delayLine.read(smoothedDelay.getNextValue());
         float delayedSample2 = delayLine2.read(smoothedDelay2.getNextValue());
 
-        // float outL = (sample * 0.5f) + (delayedSample * 0.5f);
-        // float outR = (sample * 0.5f) + (delayedSample2 * 0.5f);
+        float outL = (source * 0.5f) + (delayedSample * 0.5f);
+        float outR = (source * 0.5f) + (delayedSample2 * 0.5f);
         //float out = sample;
-        buffer.addSample(0, i, sample);
-        buffer.addSample(1, i, sample);
+        buffer.addSample(0, i, outL);
+        buffer.addSample(1, i, outR);
     }
     //juce::dsp::AudioBlock<float> block(buffer);
 }

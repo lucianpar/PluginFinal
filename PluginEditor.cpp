@@ -26,6 +26,13 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor(
   attachment.push_back(
       std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
           processorRef.apvts, "delay2", delaySlider2));
+  attachment.push_back(
+      std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
+          processorRef.apvts, "grainLength", grainLengthSlider));
+  attachment.push_back(
+      std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
+          processorRef.apvts, "grainSpeed", grainSpeedSlider));
+  
 
   addAndMakeVisible(gainSlider);
   addAndMakeVisible(frequencySlider);
@@ -33,6 +40,8 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor(
   addAndMakeVisible(rateSlider);
   addAndMakeVisible(delaySlider);
   addAndMakeVisible(delaySlider2);
+  addAndMakeVisible(grainLengthSlider);
+  addAndMakeVisible(grainSpeedSlider);
 
   chooser = std::make_unique<juce::FileChooser>(
       "Select a file to open...",
@@ -85,4 +94,6 @@ void AudioPluginAudioProcessorEditor::resized() {
   rateSlider.setBounds(area.removeFromTop(height));
   delaySlider.setBounds(area.removeFromTop(height));
   delaySlider2.setBounds(area.removeFromTop(height));
+  grainLengthSlider.setBounds(area.removeFromTop(height));
+  grainSpeedSlider.setBounds(area.removeFromTop(height));
 }

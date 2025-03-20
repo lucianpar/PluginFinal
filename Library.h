@@ -427,9 +427,9 @@ class Granulator : public PlaybackRateObserver {
   //
   void add(float t, float length, float speed) {
     for (auto& grain : grainlist) {
-      if (grain.position.done()) {
+      if (grain.envelope.done()) {
         grain.envelope.set(length / 10, 0.9 * length);
-        grain.position.set(t * buffer.size(), t * buffer.size() + length * samplerate * speed, length);
+        grain.position.set(t * buffer.size(), t * buffer.size() + length * samplerate, length);
         return;
       }
     }
@@ -448,58 +448,4 @@ class Granulator : public PlaybackRateObserver {
 }  // namespace ky
 
 
-class GranularSlicer{
-public:
-    GranularSlicer() = default;
 
-    //initialize buffer
-    void initialize(size_t bufferSize) {
-        grainBuffer.resize(bufferSize, 0.0f);
-        writePos = 0;
-    }
-
-    //write in sample, might need to use looping 
-    void write(float sample) {
-        grainBuffer[writePos] = sample;
-        writePos = (writePos + 1) % grainBuffer.size();  // Circular buffer
-    }
-    //method to set grain length
-    void setGrainLength(float lengthInSamples) {
-        grainLength = std::clamp(lengthInSamples, 1.0f, static_cast<float>(grainBuffer.size()));
-    }
-    //keeps offeset inside buffer range
-    void setStartOffset(float offset) {
-        startOffset = std::clamp(offset, 0.0f, static_cast<float>(grainBuffer.size() - 1));
-    }
-
-    float processGrain() {
-      //starting reading in
-        float readPos = static_cast<float>(writePos) - startOffset - grainLength;
-
-        // Wrap the read position - wraps to end if negative, to front if too large
-        while (readPos < 0) readPos += grainBuffer.size();
-        while (readPos >= grainBuffer.size()) readPos -= grainBuffer.size();
-
-        //smoothing
-        return interpolate(readPos);
-    }
-
-private:
-    //storing the recorded grain 
-    std::vector<float> grainBuffer;
-    //position of new samples 
-    size_t writePos = 0;
-    //defualt grain length 
-    float grainLength = 4410.0f;  // Default to 100ms at 44.1kHz
-    //plyback start
-    float startOffset = 0.0f;
-
-
-    //samplewise smoothing
-    float interpolate(float index) {
-        size_t i = static_cast<size_t>(index);
-        size_t j = (i + 1) % grainBuffer.size();
-        float t = index - i;
-        return (1.0f - t) * grainBuffer[i] + t * grainBuffer[j];
-    }
-};
