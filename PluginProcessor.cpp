@@ -176,17 +176,23 @@ void AudioPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
     smoothedDelay.setTargetValue(d * (0.5f * currentSampleRate));
     smoothedDelay2.setTargetValue(d2 * (0.5f * currentSampleRate));
 
-   
+   //trigger for grains
     trigger.frequency(5.0f + asynchrony() * 2.0f);
     //trigger.frequency(5.0);
+
+    //ramp for clip player
+    ramp.frequency(0.3f);
 
     for (int i = 0; i < buffer.getNumSamples(); ++i) {
         if (timer()) {
             env.set(0.05f, 0.3f);
         }
 
-        float sample = env() * ky::sin7(ramp()) * ky::dbtoa(-60 * (1 - v));
-        sample = reverb(sample);
+        ///// for debug synth
+        // float sample = env() * ky::sin7(ramp()) * ky::dbtoa(-60 * (1 - v));
+        // sample = reverb(sample);
+
+        float sample = player ? player->operator()(ramp()) : 0;
 
 
 
@@ -212,8 +218,8 @@ void AudioPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
         // float outL = (sample * 0.5f) + (delayedSample * 0.5f);
         // float outR = (sample * 0.5f) + (delayedSample2 * 0.5f);
         //float out = sample;
-        buffer.addSample(0, i, x);
-        buffer.addSample(1, i, x);
+        buffer.addSample(0, i, sample);
+        buffer.addSample(1, i, sample);
     }
     //juce::dsp::AudioBlock<float> block(buffer);
 }
@@ -232,10 +238,22 @@ void AudioPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
 void AudioPluginAudioProcessor::setBuffer(
     std::unique_ptr<juce::AudioBuffer<float>> buffer) {
 
+  auto b = std::make_unique<ky::ClipPlayer>();
   for (int i = 0; i < buffer->getNumSamples(); ++i) {
     granulator.buffer.push_back(buffer->getSample(0, i));
+    if (buffer->getNumChannels() == 2) {
+       b->addSample(buffer->getSample(0, i) / 2 + buffer->getSample(1, i) / 2);
+     } else {
+       b->addSample(buffer->getSample(0, i));
+     }
   }
+  player = std::move(b);
 }
+
+
+
+
+
 
 bool AudioPluginAudioProcessor::hasEditor() const {
   return true;  // (change this to false if you choose to not supply an editor)
