@@ -425,11 +425,11 @@ class Granulator : public PlaybackRateObserver {
 
   // (0, 1) where in the buffer to start...
   //
-  void add(float t, float length) {
+  void add(float t, float length, float speed) {
     for (auto& grain : grainlist) {
-      if (grain.envelope.done()) {
+      if (grain.position.done()) {
         grain.envelope.set(length / 10, 0.9 * length);
-        grain.position.set(t * buffer.size(), t * buffer.size() + length * samplerate, length);
+        grain.position.set(t * buffer.size(), t * buffer.size() + length * samplerate * speed, length);
         return;
       }
     }
