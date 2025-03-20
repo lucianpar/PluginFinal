@@ -41,6 +41,16 @@ class AudioPluginAudioProcessorEditor final
 
   juce::Slider grainMixSlider;
   juce::Label grainMixLabel;
+
+  juce::Slider grainPanLeftSlider;
+  juce::Label grainPanLeftLabel;
+
+  juce::Slider grainPanRightSlider;
+  juce::Label grainPanRightLabel;
+
+
+
+
   std::vector<
       std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>>
       attachment;

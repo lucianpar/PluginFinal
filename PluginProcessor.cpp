@@ -26,6 +26,10 @@ juce::AudioProcessorValueTreeState::ParameterLayout parameters() {
       ParameterID{"birthRate", 1}, "birthRate", 0.0, 20.0, 0.0));
   parameter_list.push_back(std::make_unique<juce::AudioParameterFloat>(
       ParameterID{"grainMix", 1}, "grainMix", 0.0, 1.0, 0.4));
+  parameter_list.push_back(std::make_unique<juce::AudioParameterFloat>(
+      ParameterID{"grainPanLeft", 1}, "grainPanLeft", -1.0, +0.0, -0.5));
+  parameter_list.push_back(std::make_unique<juce::AudioParameterFloat>(
+      ParameterID{"grainPanRight", 1}, "grainPanRight", 0.0, 1.0, 0.5));
 
   return {parameter_list.begin(), parameter_list.end()};
 }
@@ -171,26 +175,22 @@ void AudioPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear(i, 0, buffer.getNumSamples());
 
+    //param variables
     float v = apvts.getParameter("gain")->getValue();
     float d = apvts.getParameter("delay")->getValue();
     float d2 = apvts.getParameter("delay2")->getValue();
     float gLen = apvts.getParameter("grainLength")->getValue();
     float gSpeed = apvts.getParameter("grainSpeed")->getValue();
     float bRate = apvts.getParameter("birthRate")->getValue();
-
-    //float gMix = 0.9f;
     float gMix = apvts.getParameter("grainMix")->getValue();
 
-    //DBG(gSpeed);
-    //grains mix
-    //add grain params
-    
-    //gStartSpray
+    float gPanL = apvts.getParameter("grainPanLeft")->getValue();
+    float gPanR = apvts.getParameter("grainPanRight")->getValue();
 
-    // ramp.frequency(ky::mtof(f * 127));
-    // timer.frequency(7 * r);
+    float leftGrainPan = std::cos((gPanL + 1.0f) * juce::MathConstants<float>::pi * 0.25f);
+    float rightGrainPan = std::sin((gPanR + 1.0f) * juce::MathConstants<float>::pi * 0.25f);
 
-    // Smoother ramping for delay time
+
     smoothedDelay.setTargetValue(d * (0.5f * currentSampleRate));
     smoothedDelay2.setTargetValue(d2 * (0.5f * currentSampleRate));
 
@@ -229,11 +229,14 @@ void AudioPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
         float delayedSample = delayLine.read(smoothedDelay.getNextValue());
         float delayedSample2 = delayLine2.read(smoothedDelay2.getNextValue());
 
+        float grainDelayL = delayedSample * leftGrainPan;
+        float grainDelayR = delayedSample2 * rightGrainPan;
+
         float outL = ky::dbtoa(-60 * (1 - v)) * 
-        ((source * (1.0-gMix)) + (delayedSample * (gMix)));
+        ((source * (1.0-gMix)) + (grainDelayL * (gMix)));
 
         float outR = ky::dbtoa(-60 * (1 - v))* 
-        ((source * (1.0-gMix)) + (delayedSample2 * (gMix)));
+        ((source * (1.0-gMix)) + (grainDelayR * (gMix)));
         //float out = sample;
         buffer.addSample(0, i, outL);
         buffer.addSample(1, i, outR);

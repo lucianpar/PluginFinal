@@ -31,6 +31,13 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor(
       std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
           processorRef.apvts, "grainMix", grainMixSlider));
 
+  attachment.push_back(
+      std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
+          processorRef.apvts, "grainPanLeft", grainPanLeftSlider));
+  attachment.push_back(
+      std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
+          processorRef.apvts, "grainPanRight", grainPanRightSlider));
+
   gainLabel.setText("Gain", juce::dontSendNotification);
     gainLabel.attachToComponent(&gainSlider, false);
 
@@ -51,6 +58,12 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor(
 
     grainMixLabel.setText("Grain Mix", juce::dontSendNotification);
     grainMixLabel.attachToComponent(&grainMixSlider, false);
+
+    grainPanLeftLabel.setText("Left Grains Pan", juce::dontSendNotification);
+    grainPanLeftLabel.attachToComponent(&grainPanLeftSlider, false);
+
+    grainPanRightLabel.setText("Right Grains Pan", juce::dontSendNotification);
+    grainPanRightLabel.attachToComponent(&grainPanRightSlider, false);
     
   
 
@@ -74,6 +87,12 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor(
 
   addAndMakeVisible(grainMixSlider);
   addAndMakeVisible(grainMixLabel);
+
+  addAndMakeVisible(grainPanLeftSlider);
+  addAndMakeVisible(grainPanLeftLabel);
+
+  addAndMakeVisible(grainPanRightSlider);
+  addAndMakeVisible(grainPanRightLabel);
   
 
 
@@ -120,7 +139,7 @@ void AudioPluginAudioProcessorEditor::paint(juce::Graphics& g) {
 
 void AudioPluginAudioProcessorEditor::resized() {
     auto area = getLocalBounds();
-    auto height = 50;
+    auto height = 40;
 
     int buttonWidth = 150;  
     int buttonHeight = 20;  
@@ -162,5 +181,11 @@ void AudioPluginAudioProcessorEditor::resized() {
 
     grainMixLabel.setBounds(area.removeFromTop(labelHeight));
     grainMixSlider.setBounds(area.removeFromTop(height - labelHeight - padding));
+
+    grainPanLeftLabel.setBounds(area.removeFromTop(labelHeight));
+    grainPanLeftSlider.setBounds(area.removeFromTop(height - labelHeight - padding));
+
+    grainPanRightLabel.setBounds(area.removeFromTop(labelHeight));
+    grainPanRightSlider.setBounds(area.removeFromTop(height - labelHeight - padding));
 }
 
