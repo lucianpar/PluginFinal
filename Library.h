@@ -130,6 +130,7 @@ class History {
 
 struct FloatVectorWrap : public std::vector<float> {
   float operator()(float index) {
+    if (empty()) return 0.0f;
     index = wrap(index, static_cast<float>(size()), 0.0f);
     size_t i = static_cast<size_t>(floor(index));
     size_t j = (1 + i) % size();
@@ -355,10 +356,17 @@ class AttackDecay {
     decay.set(1, 0, fallTime);
   }
 
+  void reset() {
+    attack.set(0, 0, 0);
+    decay.set(0, 0, 0);
+  }
+
   float operator()() {
     if (!attack.done()) return attack();
     return decay();
   }
+
+  bool done() { return decay.done(); }
 };
 
 class MassSpring : public PlaybackRateObserver {
@@ -389,13 +397,52 @@ class MassSpring : public PlaybackRateObserver {
   }
 };
 
-class Granulator {
+class Granulator : public PlaybackRateObserver {
  public:
+
   struct Grain {
     AttackDecay envelope;
-    Line position;
-    float operator()() { return 0; }
+    Line position; // where in the source buffer to read from
+
+    float operator()(FloatVectorWrap& b) {
+      return b(position()) * envelope();
+    }
   };
+ 
+ std::vector<Grain> grainlist;
+ FloatVectorWrap buffer;
+      
+  // get next sample which is a mix of many grains...
+  //
+  float operator()() {
+    float mixdown = 0;
+    for (auto& grain : grainlist) {
+      if (grain.envelope.done()) continue;
+      mixdown += grain(buffer);
+    }
+    return mixdown;
+  }
+
+  // (0, 1) where in the buffer to start...
+  //
+  void add(float t, float length) {
+    for (auto& grain : grainlist) {
+      if (grain.envelope.done()) {
+        grain.envelope.set(length / 10, 0.9 * length);
+        grain.position.set(t * buffer.size(), t * buffer.size() + length * samplerate, length);
+        return;
+      }
+    }
+  }
+
+  Granulator() {
+    grainlist.resize(100);
+    for (auto& grain : grainlist) {
+      grain.envelope.reset();
+      grain.position.set(0, 0, 0);
+    }
+  }
+
 };
 
 }  // namespace ky

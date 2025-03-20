@@ -108,7 +108,7 @@ void AudioPluginAudioProcessor::prepareToPlay(double sampleRate,
   delayLine2.resize(maxDelaySamples);
 
   size_t bufferSize = static_cast<size_t>(0.3 * sampleRate);  // 0.3 seconds of buffer
-  slicer.initialize(bufferSize);  // ✅ Initialize GranularSlicer with buffer size
+  slicer.initialize(bufferSize);  // Initialize GranularSlicer with buffer size
 
   smoothedDelay.reset(sampleRate, 0.05);  // 50ms smoothing
   smoothedDelay2.reset(sampleRate, 0.05);
@@ -169,54 +169,66 @@ void AudioPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
     float d = apvts.getParameter("delay")->getValue();
     float d2 = apvts.getParameter("delay2")->getValue();
 
+////these enable the sine wave testing 
     ramp.frequency(ky::mtof(f * 127));
     timer.frequency(7 * r);
 
     // Smoother ramping for delay time
-    smoothedDelay.setTargetValue(d * (0.5f * currentSampleRate));
-    smoothedDelay2.setTargetValue(d2 * (0.5f * currentSampleRate));
+    smoothedDelay.setTargetValue(d * (1.0f * currentSampleRate));
+    smoothedDelay2.setTargetValue(d2 * (1.0f * currentSampleRate)); // add param for setting max samplerate
 
-    // Smoothing factor for grain start offset (prevents sudden jumps)
-    static float smoothedOffset = 0.0f;
-    float targetOffset = r * (0.5f * currentSampleRate);  // Example: Modify grain start based on rate
-    smoothedOffset = 0.9f * smoothedOffset + 0.1f * targetOffset;  
+  ////grain stuff
+   // // Smoothing factor for grain start offset (prevents sudden jumps)
+    // static float smoothedOffset = 0.0f;
+    // float targetOffset = r * (0.5f * currentSampleRate);  // Example: Modify grain start based on rate
+    // smoothedOffset = 0.9f * smoothedOffset + 0.1f * targetOffset;  
 
-    slicer.setStartOffset(smoothedOffset);  // ✅ Apply smoothing to grain start
+    ////grain stuff
+   // slicer.setStartOffset(smoothedOffset);  // Apply smoothing to grain start
+
+    //for clip player
+    //ramp.frequency(0.3f);
 
     for (int i = 0; i < buffer.getNumSamples(); ++i) {
         if (timer()) {
             env.set(0.05f, 0.3f);
         }
 
+        //for clip player
+        //float sample = player ? player->operator()(ramp()) : 0;
+        //sample *= ky::dbtoa(-60 * (1 - v));
+
         float sample = env() * ky::sin7(ramp()) * ky::dbtoa(-60 * (1 - v));
-        sample = reverb(sample);
+        //sample = reverb(sample);
 
         // writes sample into the granular slicer. planning to change how this works 
-        slicer.write(sample);
+        //slicer.write(sample);
 
         // Process the grain with additional smoothing for playback
-        float grainSample = slicer.processGrain();
+        //float grainSample = slicer.processGrain();
 
-        // Acrossfaid - i think this is working i might chang it
-        static float prevGrainSample = 0.0f;
-        float smoothGrain = 0.95f * prevGrainSample + 0.05f * grainSample;
-        prevGrainSample = smoothGrain;
+        // grain crossfaid - i think this is working i might chang it
+       // static float prevGrainSample = 0.0f;
+        //float smoothGrain = 0.95f * prevGrainSample + 0.05f * grainSample;
+        //
+        //prevGrainSample = smoothGrain;
 
         // feeding info into my left and right delay line. raw info into 1 and grain slice into the other. this basically doesnt change anything the way it is currently set up
         delayLine.write(sample);
-        delayLine2.write(smoothGrain);
+        delayLine2.write(sample);
 
-        //more smoothing
+        //delay smoothing
         float delayedSample = delayLine.read(smoothedDelay.getNextValue());
         float delayedSample2 = delayLine2.read(smoothedDelay2.getNextValue());
 
         
-        float leftOutput = (sample * 0.5f) + (delayedSample * 0.25f);
-        float rightOutput = (sample * 0.5f) + (delayedSample2 * 0.25f);
+        float leftOutput = (sample * 0.5f) + (delayedSample * 0.5f);
+        float rightOutput = (sample * 0.5f) + (delayedSample2 * 0.5f);
 
         buffer.addSample(0, i, leftOutput);
         buffer.addSample(1, i, rightOutput);
     }
+    //juce::dsp::AudioBlock<float> block(buffer);
 }
 
 
@@ -243,7 +255,7 @@ void AudioPluginAudioProcessor::setBuffer(
     }
   }
 
-  //player = std::move(b);
+  player = std::move(b);
 }
 
 bool AudioPluginAudioProcessor::hasEditor() const {
