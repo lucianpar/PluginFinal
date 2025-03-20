@@ -11,15 +11,7 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor(
   attachment.push_back(
       std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
           processorRef.apvts, "gain", gainSlider));
-  attachment.push_back(
-      std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
-          processorRef.apvts, "frequency", frequencySlider));
-  // attachment.push_back(
-  //     std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
-  //         processorRef.apvts, "distortion", distortionSlider));
-  attachment.push_back(
-      std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
-          processorRef.apvts, "rate", rateSlider));
+
   attachment.push_back(
       std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
           processorRef.apvts, "delay", delaySlider));
@@ -32,16 +24,58 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor(
   attachment.push_back(
       std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
           processorRef.apvts, "grainSpeed", grainSpeedSlider));
+  attachment.push_back(
+      std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
+          processorRef.apvts, "birthRate", birthRateSlider));
+  attachment.push_back(
+      std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
+          processorRef.apvts, "grainMix", grainMixSlider));
+
+  gainLabel.setText("Gain", juce::dontSendNotification);
+    gainLabel.attachToComponent(&gainSlider, false);
+
+    delayLabel.setText("Delay", juce::dontSendNotification);
+    delayLabel.attachToComponent(&delaySlider, false);
+
+    delayLabel2.setText("Delay2", juce::dontSendNotification);
+    delayLabel2.attachToComponent(&delaySlider2, false);
+
+    grainLengthLabel.setText("Grain Length", juce::dontSendNotification);
+    grainLengthLabel.attachToComponent(&grainLengthSlider, false);
+
+    grainSpeedLabel.setText("Grain Speed", juce::dontSendNotification);
+    grainSpeedLabel.attachToComponent(&grainSpeedSlider, false);
+
+    birthRateLabel.setText("Birth Rate", juce::dontSendNotification);
+    birthRateLabel.attachToComponent(&birthRateSlider, false);
+
+    grainMixLabel.setText("Grain Mix", juce::dontSendNotification);
+    grainMixLabel.attachToComponent(&grainMixSlider, false);
+    
   
 
   addAndMakeVisible(gainSlider);
-  addAndMakeVisible(frequencySlider);
-  //addAndMakeVisible(distortionSlider);
-  addAndMakeVisible(rateSlider);
+  addAndMakeVisible(gainLabel);
+  
   addAndMakeVisible(delaySlider);
+  addAndMakeVisible(delayLabel);
+
   addAndMakeVisible(delaySlider2);
+  addAndMakeVisible(delayLabel2);
+
   addAndMakeVisible(grainLengthSlider);
+  addAndMakeVisible(grainLengthLabel);
+
   addAndMakeVisible(grainSpeedSlider);
+  addAndMakeVisible(grainSpeedLabel);
+
+  addAndMakeVisible(birthRateSlider);
+  addAndMakeVisible(birthRateLabel);
+
+  addAndMakeVisible(grainMixSlider);
+  addAndMakeVisible(grainMixLabel);
+  
+
 
   chooser = std::make_unique<juce::FileChooser>(
       "Select a file to open...",
@@ -85,15 +119,48 @@ void AudioPluginAudioProcessorEditor::paint(juce::Graphics& g) {
 }
 
 void AudioPluginAudioProcessorEditor::resized() {
-  auto area = getLocalBounds();
-  auto height = 40;
-  openButton.setBounds(area.removeFromTop(height));
-  gainSlider.setBounds(area.removeFromTop(height));
-  frequencySlider.setBounds(area.removeFromTop(height));
-  //distortionSlider.setBounds(area.removeFromTop(height));
-  rateSlider.setBounds(area.removeFromTop(height));
-  delaySlider.setBounds(area.removeFromTop(height));
-  delaySlider2.setBounds(area.removeFromTop(height));
-  grainLengthSlider.setBounds(area.removeFromTop(height));
-  grainSpeedSlider.setBounds(area.removeFromTop(height));
+    auto area = getLocalBounds();
+    auto height = 50;
+
+    int buttonWidth = 150;  
+    int buttonHeight = 20;  
+    int topMargin = 20;  // Moves all elements down
+
+    // Open Button Positioning
+    openButton.setBounds((area.getWidth() - buttonWidth) / 2, 10, buttonWidth, buttonHeight);
+
+    // Move content down
+    area.removeFromTop(topMargin);
+
+    // Define label height and spacing
+    int labelHeight = 20;
+    int padding = 5;  // Space between label & slider
+
+    // Gain
+    gainLabel.setBounds(area.removeFromTop(labelHeight));
+    gainSlider.setBounds(area.removeFromTop(height - labelHeight - padding));
+
+    // Delay
+    delayLabel.setBounds(area.removeFromTop(labelHeight));
+    delaySlider.setBounds(area.removeFromTop(height - labelHeight - padding));
+
+    // Delay2
+    delayLabel2.setBounds(area.removeFromTop(labelHeight));
+    delaySlider2.setBounds(area.removeFromTop(height - labelHeight - padding));
+
+    // Grain Length
+    grainLengthLabel.setBounds(area.removeFromTop(labelHeight));
+    grainLengthSlider.setBounds(area.removeFromTop(height - labelHeight - padding));
+
+    // Grain Speed
+    grainSpeedLabel.setBounds(area.removeFromTop(labelHeight));
+    grainSpeedSlider.setBounds(area.removeFromTop(height - labelHeight - padding));
+
+    // Birth Rate
+    birthRateLabel.setBounds(area.removeFromTop(labelHeight));
+    birthRateSlider.setBounds(area.removeFromTop(height - labelHeight - padding));
+
+    grainMixLabel.setBounds(area.removeFromTop(labelHeight));
+    grainMixSlider.setBounds(area.removeFromTop(height - labelHeight - padding));
 }
+

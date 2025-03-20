@@ -429,7 +429,7 @@ class Granulator : public PlaybackRateObserver {
     for (auto& grain : grainlist) {
       if (grain.envelope.done()) {
         grain.envelope.set(length / 10, 0.9 * length);
-        grain.position.set(t * buffer.size(), t * buffer.size() + length * samplerate, length);
+        grain.position.set(t * buffer.size(), t * buffer.size() + length * samplerate * speed, length);
         return;
       }
     }

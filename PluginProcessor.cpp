@@ -19,9 +19,13 @@ juce::AudioProcessorValueTreeState::ParameterLayout parameters() {
   parameter_list.push_back(std::make_unique<juce::AudioParameterFloat>(
       ParameterID{"delay2", 1}, "Delay2", 0.0, 2.0, 0.0));
   parameter_list.push_back(std::make_unique<juce::AudioParameterFloat>(
-      ParameterID{"grainLength", 1}, "grainLength", 0.0, 2.0, 0.0));
-      parameter_list.push_back(std::make_unique<juce::AudioParameterFloat>(
-      ParameterID{"grainSpeed", 1}, "grainSpeed", 0.0, 4.0, 0.0));
+      ParameterID{"grainLength", 1}, "grainLength", 0.0, 3.0, 0.0));
+  parameter_list.push_back(std::make_unique<juce::AudioParameterFloat>(
+      ParameterID{"grainSpeed", 1}, "grainSpeed", -3.0, 3.0, 0.0));
+  parameter_list.push_back(std::make_unique<juce::AudioParameterFloat>(
+      ParameterID{"birthRate", 1}, "birthRate", 0.0, 20.0, 0.0));
+  parameter_list.push_back(std::make_unique<juce::AudioParameterFloat>(
+      ParameterID{"grainMix", 1}, "grainMix", 0.0, 1.0, 0.4));
 
   return {parameter_list.begin(), parameter_list.end()};
 }
@@ -168,12 +172,17 @@ void AudioPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
         buffer.clear(i, 0, buffer.getNumSamples());
 
     float v = apvts.getParameter("gain")->getValue();
-    float f = apvts.getParameter("frequency")->getValue();
-    float r = apvts.getParameter("rate")->getValue();
     float d = apvts.getParameter("delay")->getValue();
     float d2 = apvts.getParameter("delay2")->getValue();
     float gLen = apvts.getParameter("grainLength")->getValue();
     float gSpeed = apvts.getParameter("grainSpeed")->getValue();
+    float bRate = apvts.getParameter("birthRate")->getValue();
+
+    //float gMix = 0.9f;
+    float gMix = apvts.getParameter("grainMix")->getValue();
+
+    //DBG(gSpeed);
+    //grains mix
     //add grain params
     
     //gStartSpray
@@ -186,7 +195,7 @@ void AudioPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
     smoothedDelay2.setTargetValue(d2 * (0.5f * currentSampleRate));
 
    //trigger for grains
-    trigger.frequency(5.0f + asynchrony() * 2.0f);
+    trigger.frequency(bRate*20.0f); //nornmalize to 10hz
     //trigger.frequency(5.0);
 
     //ramp for clip player
@@ -205,16 +214,10 @@ void AudioPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
 
 
 
-        
-
-
-        //buffer.addSample(0, i, leftOutput);
-        //buffer.addSample(1, i, rightOutput);
-
         //when trigger happens, add a grain at that buffer position
         if (trigger()) {
           if (intermittency() > 0.8) break;
-          granulator.add(where(), gLen, 1.0f * gSpeed);
+          granulator.add(where(), (gLen*3.0f), (-3.0f + (6.0*gSpeed)));
         }
     
         float source = sample;
@@ -226,8 +229,11 @@ void AudioPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
         float delayedSample = delayLine.read(smoothedDelay.getNextValue());
         float delayedSample2 = delayLine2.read(smoothedDelay2.getNextValue());
 
-        float outL = (source * 0.5f) + (delayedSample * 0.5f);
-        float outR = (source * 0.5f) + (delayedSample2 * 0.5f);
+        float outL = ky::dbtoa(-60 * (1 - v)) * 
+        ((source * (1.0-gMix)) + (delayedSample * (gMix)));
+
+        float outR = ky::dbtoa(-60 * (1 - v))* 
+        ((source * (1.0-gMix)) + (delayedSample2 * (gMix)));
         //float out = sample;
         buffer.addSample(0, i, outL);
         buffer.addSample(1, i, outR);
