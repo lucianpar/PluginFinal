@@ -31,7 +31,7 @@ gainSlider.setRange(-60.0f, 0.0f, 1.0f);
   attachment.push_back(
       std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
           processorRef.apvts, "grainSpeed", grainSpeedSlider));
-  birthRateSlider.setRange(0.1f, 10.0f, 0.1f);
+  birthRateSlider.setRange(0.1f, 60.0f, 0.1f);
   attachment.push_back(
       std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
           processorRef.apvts, "birthRate", birthRateSlider));

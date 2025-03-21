@@ -17,7 +17,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout parameters() {
   parameter_list.push_back(std::make_unique<juce::AudioParameterFloat>(
       ParameterID{"grainSpeed", 1}, "grainSpeed", -3.0, 3.0, 0.0));
   parameter_list.push_back(std::make_unique<juce::AudioParameterFloat>(
-      ParameterID{"birthRate", 1}, "birthRate", 0.0, 10.0, 0.1));
+      ParameterID{"birthRate", 1}, "birthRate", 0.0, 60.0, 0.1));
   parameter_list.push_back(std::make_unique<juce::AudioParameterFloat>(
       ParameterID{"grainMix", 1}, "grainMix", 0.0, 1.0, 0.0));
   parameter_list.push_back(std::make_unique<juce::AudioParameterFloat>(
