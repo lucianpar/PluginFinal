@@ -116,11 +116,9 @@ void AudioPluginAudioProcessor::prepareToPlay(double sampleRate,
   delayLine.resize(maxDelaySamples);
   delayLine2.resize(maxDelaySamples);
 
+
+  smoothedBirthRate.reset(sampleRate, 0.05); // Smooth over 50ms,could tweak shorter
   smoothedGrainMix.reset(sampleRate, 0.02); // ~20ms smoothing
-
-
-  // size_t bufferSize = static_cast<size_t>(1 * sampleRate);  // 0.3 seconds of buffer
-  // slicer.initialize(bufferSize);  // ✅ Initialize GranularSlicer with buffer size
 
   smoothedDelay.reset(sampleRate, 0.05);  // 50ms smoothing
   smoothedDelay2.reset(sampleRate, 0.05);
@@ -186,24 +184,17 @@ void AudioPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
 
     //param variables
     float v = apvts.getParameter("gain")->getValue();
-    //float d = apvts.getParameter("delay")->getValue();
-    //float d2 = apvts.getParameter("delay2")->getValue();
-    //float gLen = apvts.getParameter("grainLength")->getValue();
-    //float gSpeed = apvts.getParameter("grainSpeed")->getValue();
-    //float bRate = apvts.getParameter("birthRate")->getValue();
-    //float gMix = apvts.getParameter("grainMix")->getValue();
-
-
-    //panning 
+   
     float gPanL = *apvts.getRawParameterValue("grainPanLeft");
     float gPanR = *apvts.getRawParameterValue("grainPanRight");
     float d = *apvts.getRawParameterValue("delay");
     float d2 = *apvts.getRawParameterValue("delay2");
     float gLen = *apvts.getRawParameterValue("grainLength");
     float gSpeed = *apvts.getRawParameterValue("grainSpeed");
-    float bRate = *apvts.getRawParameterValue("birthRate");
+    //float bRate = *apvts.getRawParameterValue("birthRate");
     float gMix = *apvts.getRawParameterValue("grainMix");
 
+    smoothedBirthRate.setTargetValue(*apvts.getRawParameterValue("birthRate"));
     smoothedGrainMix.setTargetValue(*apvts.getRawParameterValue("grainMix"));
 
 
@@ -226,12 +217,12 @@ void AudioPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
     smoothedDelay2.setTargetValue(d2 * currentSampleRate);
 
    //trigger for grains
-    trigger.frequency(bRate); //nornmalize to 20hz
+    // trigger.frequency(bRate); //nornmalize to 20hz
 
     //ramp for clip player
-    ramp.frequency(0.1f);
+    ramp.frequency(0.11f);
 
-    DBG(gMix);
+
 
     for (int i = 0; i < buffer.getNumSamples(); ++i) {
         if (timer()) {
@@ -244,6 +235,7 @@ void AudioPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
         float sample = player ? player->operator()(ramp()) : 0;
 
 
+        trigger.frequency(smoothedBirthRate.getNextValue());
 
         //when trigger happens, add a grain at that buffer position
         if (trigger()) {
@@ -267,6 +259,10 @@ void AudioPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
 
         float outL = ky::dbtoa(-60 * (1 - v)) *  ((source * (1.0-mix)) + (grainDelay1 * (mix)));
         float outR = ky::dbtoa(-60 * (1 - v))*  ((source * (1.0-mix)) + (grainDelay2 * (mix)));
+
+        outL = juce::jlimit(-1.0f, 1.0f, outL);//clamping vols
+        outR = juce::jlimit(-1.0f, 1.0f, outR);
+
         //float out = sample;
         buffer.addSample(0, i, outL);
         buffer.addSample(1, i, outR);

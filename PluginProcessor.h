@@ -72,6 +72,7 @@ class AudioPluginAudioProcessor final : public juce::AudioProcessor {
   juce::SmoothedValue<float, juce::ValueSmoothingTypes::Linear> smoothedDelay2;
 
   juce::SmoothedValue<float, juce::ValueSmoothingTypes::Linear> smoothedGrainMix;
+  juce::SmoothedValue<float, juce::ValueSmoothingTypes::Linear> smoothedBirthRate;
 
 
   std::unique_ptr<ky::ClipPlayer> player;
