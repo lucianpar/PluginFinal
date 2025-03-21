@@ -40,9 +40,7 @@ AudioPluginAudioProcessor::AudioPluginAudioProcessor()
 #endif
               ),
       apvts(*this, nullptr, "Parameters", parameters())
-      //, panWander(true, -1.0f, 1.0f, 0.0f)
        {
-       // 
 }
 
 AudioPluginAudioProcessor::~AudioPluginAudioProcessor() {}
@@ -109,9 +107,8 @@ void AudioPluginAudioProcessor::prepareToPlay(double sampleRate,
 
   ky::setPlaybackRate(static_cast<float>(getSampleRate()));
 
-  //reverb.configure();
 
-  // mDelayLine.setMaximumDelayInSamples(static_cast<int>(sampleRate));
+
   size_t maxDelaySamples = static_cast<size_t>(5.0 * sampleRate);
   delayLine.resize(maxDelaySamples);
   delayLine2.resize(maxDelaySamples);
@@ -124,17 +121,6 @@ void AudioPluginAudioProcessor::prepareToPlay(double sampleRate,
   smoothedDelay2.reset(sampleRate, 0.05);
 
   currentSampleRate = sampleRate;
-
-  // float panMin = -1.0f;  // Example min value
-  // float panMax = 0.0f;   // Example max value
-
-  //enable wandering 
-  // float initialPanValue = apvts.getParameter("grainPanLeft")->getValue(); 
-  // panWander.init(initialPanValue); 
-  
-
-
-
 
   juce::dsp::ProcessSpec spec;
   spec.sampleRate = sampleRate;
@@ -191,8 +177,6 @@ void AudioPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
     float d2 = *apvts.getRawParameterValue("delay2");
     float gLen = *apvts.getRawParameterValue("grainLength");
     float gSpeed = *apvts.getRawParameterValue("grainSpeed");
-    //float bRate = *apvts.getRawParameterValue("birthRate");
-    //float gMix = *apvts.getRawParameterValue("grainMix");
 
     smoothedBirthRate.setTargetValue(*apvts.getRawParameterValue("birthRate"));
     smoothedGrainMix.setTargetValue(*apvts.getRawParameterValue("grainMix"));
@@ -201,8 +185,7 @@ void AudioPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
 
 
     panWander.update();
-    panWander2.update();
-    //float wanderingPan = panWander.getValue();
+    panWander2.update(); //mostly useful if using 2 grain groups, currently everything else is using 1 group
 
     float finalPanLeft = juce::jlimit(-1.0f, 1.0f, gPanL + panWander.getValue() ); // Clamp in range - left grain pan slider value+wander increment
     float finalPanRight = juce::jlimit(-1.0f, 1.0f, gPanR + panWander2.getValue());
@@ -216,12 +199,10 @@ void AudioPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
     smoothedDelay.setTargetValue(d * currentSampleRate);
     smoothedDelay2.setTargetValue(d2 * currentSampleRate);
 
-   //trigger for grains
-    // trigger.frequency(bRate); //nornmalize to 20hz
+  
 
     //ramp for clip player
     ramp.frequency(0.11f);
-
 
 
     for (int i = 0; i < buffer.getNumSamples(); ++i) {
@@ -278,14 +259,6 @@ void AudioPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
 }
 
 
-
-
-
-
-
-
- //juce::dsp::AudioBlock<float> block(buffer);
-  // convolution.process(juce::dsp::ProcessContextReplacing<float>(block));
 
 
 void AudioPluginAudioProcessor::setBuffer(
