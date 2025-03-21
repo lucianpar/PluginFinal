@@ -192,7 +192,7 @@ void AudioPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
     float gLen = *apvts.getRawParameterValue("grainLength");
     float gSpeed = *apvts.getRawParameterValue("grainSpeed");
     //float bRate = *apvts.getRawParameterValue("birthRate");
-    float gMix = *apvts.getRawParameterValue("grainMix");
+    //float gMix = *apvts.getRawParameterValue("grainMix");
 
     smoothedBirthRate.setTargetValue(*apvts.getRawParameterValue("birthRate"));
     smoothedGrainMix.setTargetValue(*apvts.getRawParameterValue("grainMix"));
@@ -235,18 +235,25 @@ void AudioPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
         float sample = player ? player->operator()(ramp()) : 0;
 
 
-        trigger.frequency(smoothedBirthRate.getNextValue());
+        trigger1.frequency(smoothedBirthRate.getNextValue());
+       //trigger2.frequency(smoothedBirthRate.getNextValue()); - for now - just using one granulator group
 
         //when trigger happens, add a grain at that buffer position
-        if (trigger()) {
+        if (trigger1()) {
           if (intermittency() > 0.8) break; //not currently using
           granulator.add(where(), (gLen), gSpeed);
         }
+        // if (trigger2()) {
+        //   if (intermittency() > 0.8) break; //not currently using
+        //   granulator2.add(where(), (gLen), gSpeed);
+        // } -for now - just using one granulator group
     
         float source = sample;
-        float x = granulator();
-        delayLine.write(x);
-        delayLine2.write(x);
+        float x1 = granulator();
+        // float x2 = granulator2(); - for now - just using one granulator group
+        delayLine.write(x1);
+        // delayLine2.write(x2); - for now - just using one granulator group
+        delayLine2.write(x1);
 
         //more smoothing
         float delayedSample = delayLine.read(smoothedDelay.getNextValue());

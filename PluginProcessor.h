@@ -55,7 +55,9 @@ class AudioPluginAudioProcessor final : public juce::AudioProcessor {
 
  private:
  ky::Granulator granulator;
- ky::Timer trigger;
+ ky::Granulator granulator2;
+ ky::Timer trigger1;
+ ky::Timer trigger2;
  ky::Noise asynchrony, intermittency, wobble, where;
   ky::Ramp ramp;
   ky::Timer timer;
