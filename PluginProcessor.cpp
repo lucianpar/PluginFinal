@@ -13,13 +13,13 @@ juce::AudioProcessorValueTreeState::ParameterLayout parameters() {
   parameter_list.push_back(std::make_unique<juce::AudioParameterFloat>(
       ParameterID{"delay2", 1}, "Delay2", 0.0, 4.0, 0.1));
   parameter_list.push_back(std::make_unique<juce::AudioParameterFloat>(
-      ParameterID{"grainLength", 1}, "grainLength", 0.0, 3.0, 0.5));
+      ParameterID{"grainLength", 1}, "grainLength", 0.1, 3.0, 0.5));
   parameter_list.push_back(std::make_unique<juce::AudioParameterFloat>(
       ParameterID{"grainSpeed", 1}, "grainSpeed", -3.0, 3.0, 0.0));
   parameter_list.push_back(std::make_unique<juce::AudioParameterFloat>(
-      ParameterID{"birthRate", 1}, "birthRate", 0.0, 60.0, 5));
+      ParameterID{"birthRate", 1}, "birthRate", 0.0, 40.0, 5));
   parameter_list.push_back(std::make_unique<juce::AudioParameterFloat>(
-      ParameterID{"grainMix", 1}, "grainMix", 0, 100, 50));
+      ParameterID{"grainMix", 1}, "grainMix", 0.0, 1.0, 0.5));
   parameter_list.push_back(std::make_unique<juce::AudioParameterFloat>(
       ParameterID{"grainPanLeft", 1}, "grainPanLeft", -1.0, 1.0,-0.5));
   parameter_list.push_back(std::make_unique<juce::AudioParameterFloat>(
@@ -112,9 +112,12 @@ void AudioPluginAudioProcessor::prepareToPlay(double sampleRate,
   //reverb.configure();
 
   // mDelayLine.setMaximumDelayInSamples(static_cast<int>(sampleRate));
-  size_t maxDelaySamples = static_cast<size_t>(2.0 * sampleRate);
+  size_t maxDelaySamples = static_cast<size_t>(5.0 * sampleRate);
   delayLine.resize(maxDelaySamples);
   delayLine2.resize(maxDelaySamples);
+
+  smoothedGrainMix.reset(sampleRate, 0.02); // ~20ms smoothing
+
 
   // size_t bufferSize = static_cast<size_t>(1 * sampleRate);  // 0.3 seconds of buffer
   // slicer.initialize(bufferSize);  // ✅ Initialize GranularSlicer with buffer size
@@ -183,47 +186,60 @@ void AudioPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
 
     //param variables
     float v = apvts.getParameter("gain")->getValue();
-    float d = apvts.getParameter("delay")->getValue();
-    float d2 = apvts.getParameter("delay2")->getValue();
-    float gLen = apvts.getParameter("grainLength")->getValue();
-    float gSpeed = apvts.getParameter("grainSpeed")->getValue();
-    float bRate = apvts.getParameter("birthRate")->getValue();
-    float gMix = apvts.getParameter("grainMix")->getValue();
+    //float d = apvts.getParameter("delay")->getValue();
+    //float d2 = apvts.getParameter("delay2")->getValue();
+    //float gLen = apvts.getParameter("grainLength")->getValue();
+    //float gSpeed = apvts.getParameter("grainSpeed")->getValue();
+    //float bRate = apvts.getParameter("birthRate")->getValue();
+    //float gMix = apvts.getParameter("grainMix")->getValue();
 
 
     //panning 
     float gPanL = *apvts.getRawParameterValue("grainPanLeft");
     float gPanR = *apvts.getRawParameterValue("grainPanRight");
+    float d = *apvts.getRawParameterValue("delay");
+    float d2 = *apvts.getRawParameterValue("delay2");
+    float gLen = *apvts.getRawParameterValue("grainLength");
+    float gSpeed = *apvts.getRawParameterValue("grainSpeed");
+    float bRate = *apvts.getRawParameterValue("birthRate");
+    float gMix = *apvts.getRawParameterValue("grainMix");
+
+    smoothedGrainMix.setTargetValue(*apvts.getRawParameterValue("grainMix"));
+
+
+
 
     panWander.update();
+    panWander2.update();
     //float wanderingPan = panWander.getValue();
 
     float finalPanLeft = juce::jlimit(-1.0f, 1.0f, gPanL + panWander.getValue() ); // Clamp in range - left grain pan slider value+wander increment
-    float finalPanRight = juce::jlimit(-1.0f, 1.0f, gPanR + panWander.getValue());
+    float finalPanRight = juce::jlimit(-1.0f, 1.0f, gPanR + panWander2.getValue());
     
 
     float leftGrainPan = std::cos((finalPanLeft + 1.0f) * juce::MathConstants<float>::pi * 0.25f);
     float rightGrainPan = std::sin((finalPanRight + 1.0f) * juce::MathConstants<float>::pi * 0.25f);
-    DBG(leftGrainPan);
+  
 
 
     smoothedDelay.setTargetValue(d * currentSampleRate);
     smoothedDelay2.setTargetValue(d2 * currentSampleRate);
 
    //trigger for grains
-    trigger.frequency(bRate*20.0f); //nornmalize to 20hz
+    trigger.frequency(bRate); //nornmalize to 20hz
 
     //ramp for clip player
     ramp.frequency(0.1f);
+
+    DBG(gMix);
 
     for (int i = 0; i < buffer.getNumSamples(); ++i) {
         if (timer()) {
             env.set(0.05f, 0.3f);
         }
 
-        ///// for debug synth
-        // float sample = env() * ky::sin7(ramp()) * ky::dbtoa(-60 * (1 - v));
-        // sample = reverb(sample);
+      
+        //from clip player
 
         float sample = player ? player->operator()(ramp()) : 0;
 
@@ -231,8 +247,8 @@ void AudioPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
 
         //when trigger happens, add a grain at that buffer position
         if (trigger()) {
-          if (intermittency() > 0.8) break;
-          granulator.add(where(), (gLen*3.0f), gSpeed);
+          if (intermittency() > 0.8) break; //not currently using
+          granulator.add(where(), (gLen), gSpeed);
         }
     
         float source = sample;
@@ -247,9 +263,10 @@ void AudioPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
         float grainDelay1 = delayedSample * leftGrainPan;
         float grainDelay2 = delayedSample2 * rightGrainPan;
 
-        float outL = ky::dbtoa(-60 * (1 - v)) *  ((source * (1.0-gMix)) + (grainDelay1 * (gMix)));
+        float mix = smoothedGrainMix.getNextValue();
 
-        float outR = ky::dbtoa(-60 * (1 - v))*  ((source * (1.0-gMix)) + (grainDelay2 * (gMix)));
+        float outL = ky::dbtoa(-60 * (1 - v)) *  ((source * (1.0-mix)) + (grainDelay1 * (mix)));
+        float outR = ky::dbtoa(-60 * (1 - v))*  ((source * (1.0-mix)) + (grainDelay2 * (mix)));
         //float out = sample;
         buffer.addSample(0, i, outL);
         buffer.addSample(1, i, outR);

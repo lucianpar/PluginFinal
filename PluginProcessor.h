@@ -68,8 +68,11 @@ class AudioPluginAudioProcessor final : public juce::AudioProcessor {
   float smoothedSamplesAgo2 = 0.0f;  // For second delay line
   // juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::Linear> mDelayLine{44100};
 
-   juce::SmoothedValue<float, juce::ValueSmoothingTypes::Linear> smoothedDelay;
+  juce::SmoothedValue<float, juce::ValueSmoothingTypes::Linear> smoothedDelay;
   juce::SmoothedValue<float, juce::ValueSmoothingTypes::Linear> smoothedDelay2;
+
+  juce::SmoothedValue<float, juce::ValueSmoothingTypes::Linear> smoothedGrainMix;
+
 
   std::unique_ptr<ky::ClipPlayer> player;
 
@@ -80,7 +83,8 @@ class AudioPluginAudioProcessor final : public juce::AudioProcessor {
   //==============================================================================
   JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(AudioPluginAudioProcessor)
   //GranularSlicer slicer; 
-  ky::Wander panWander{0.005f}; // ✅ Already constructed, but needs values at runtime
+  ky::Wander panWander{0.005f}; // step size of 0.005
+  ky::Wander panWander2{0.005f};
 };
 
 juce::AudioProcessorValueTreeState::ParameterLayout parameters();
