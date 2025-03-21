@@ -445,6 +445,38 @@ class Granulator : public PlaybackRateObserver {
 
 };
 
+class Wander {
+public:
+    Wander(float stepSize) : stepSize(stepSize), wanderValue(0.0f) {}
+
+    void update() {
+        wanderValue += (movingUp ? stepSize : -stepSize);
+
+        // Reverse direction when reaching a limit
+        if (wanderValue >= 0.5f || wanderValue <= -0.5f) {
+            movingUp = !movingUp;
+        }
+    }
+
+    float getValue() const {
+        return wanderValue;
+    }
+
+private:
+    float stepSize;
+    float wanderValue;
+    bool movingUp = true;
+};
+
+
+
+
+
+
+
+
+ 
+
 }  // namespace ky
 
 

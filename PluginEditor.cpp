@@ -8,6 +8,9 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor(
     : AudioProcessorEditor(&p), processorRef(p) {
   setSize(500, 400);
 
+
+
+
   attachment.push_back(
       std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
           processorRef.apvts, "gain", gainSlider));
@@ -31,9 +34,11 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor(
       std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
           processorRef.apvts, "grainMix", grainMixSlider));
 
+  grainPanLeftSlider.setRange(-1.0f, 1.0f, 0.1f);
   attachment.push_back(
       std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
           processorRef.apvts, "grainPanLeft", grainPanLeftSlider));
+  grainPanRightSlider.setRange(-1.0f, 1.0f, 0.1f);
   attachment.push_back(
       std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
           processorRef.apvts, "grainPanRight", grainPanRightSlider));

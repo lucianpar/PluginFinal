@@ -27,9 +27,9 @@ juce::AudioProcessorValueTreeState::ParameterLayout parameters() {
   parameter_list.push_back(std::make_unique<juce::AudioParameterFloat>(
       ParameterID{"grainMix", 1}, "grainMix", 0.0, 1.0, 0.4));
   parameter_list.push_back(std::make_unique<juce::AudioParameterFloat>(
-      ParameterID{"grainPanLeft", 1}, "grainPanLeft", -1.0, +0.0, -0.5));
+      ParameterID{"grainPanLeft", 1}, "grainPanLeft", -1.0, 1.0,-0.5));
   parameter_list.push_back(std::make_unique<juce::AudioParameterFloat>(
-      ParameterID{"grainPanRight", 1}, "grainPanRight", 0.0, 1.0, 0.5));
+      ParameterID{"grainPanRight", 1}, "grainPanRight", -1.0, 1.0, 0.5));
 
   return {parameter_list.begin(), parameter_list.end()};
 }
@@ -45,7 +45,10 @@ AudioPluginAudioProcessor::AudioPluginAudioProcessor()
               .withOutput("Output", juce::AudioChannelSet::stereo(), true)
 #endif
               ),
-      apvts(*this, nullptr, "Parameters", parameters()) {
+      apvts(*this, nullptr, "Parameters", parameters())
+      //, panWander(true, -1.0f, 1.0f, 0.0f)
+       {
+       // 
 }
 
 AudioPluginAudioProcessor::~AudioPluginAudioProcessor() {}
@@ -112,7 +115,7 @@ void AudioPluginAudioProcessor::prepareToPlay(double sampleRate,
 
   ky::setPlaybackRate(static_cast<float>(getSampleRate()));
 
-  reverb.configure();
+  //reverb.configure();
 
   // mDelayLine.setMaximumDelayInSamples(static_cast<int>(sampleRate));
   size_t maxDelaySamples = static_cast<size_t>(2.0 * sampleRate);
@@ -126,7 +129,16 @@ void AudioPluginAudioProcessor::prepareToPlay(double sampleRate,
   smoothedDelay2.reset(sampleRate, 0.05);
 
   currentSampleRate = sampleRate;
+
+  // float panMin = -1.0f;  // Example min value
+  // float panMax = 0.0f;   // Example max value
+
+  //enable wandering 
+  // float initialPanValue = apvts.getParameter("grainPanLeft")->getValue(); 
+  // panWander.init(initialPanValue); 
   
+
+
 
 
   juce::dsp::ProcessSpec spec;
@@ -184,19 +196,28 @@ void AudioPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
     float bRate = apvts.getParameter("birthRate")->getValue();
     float gMix = apvts.getParameter("grainMix")->getValue();
 
-    float gPanL = apvts.getParameter("grainPanLeft")->getValue();
-    float gPanR = apvts.getParameter("grainPanRight")->getValue();
 
-    float leftGrainPan = std::cos((gPanL + 1.0f) * juce::MathConstants<float>::pi * 0.25f);
-    float rightGrainPan = std::sin((gPanR + 1.0f) * juce::MathConstants<float>::pi * 0.25f);
+    //panning 
+    float gPanL = *apvts.getRawParameterValue("grainPanLeft");
+    float gPanR = *apvts.getRawParameterValue("grainPanRight");
+
+    panWander.update();
+    //float wanderingPan = panWander.getValue();
+
+    float finalPanLeft = juce::jlimit(-1.0f, 1.0f, gPanL + panWander.getValue() ); // Clamp in range - left grain pan slider value+wander increment
+    float finalPanRight = juce::jlimit(-1.0f, 1.0f, gPanR + panWander.getValue());
+    
+
+    float leftGrainPan = std::cos((finalPanLeft + 1.0f) * juce::MathConstants<float>::pi * 0.25f);
+    float rightGrainPan = std::sin((finalPanRight + 1.0f) * juce::MathConstants<float>::pi * 0.25f);
+    DBG(leftGrainPan);
 
 
     smoothedDelay.setTargetValue(d * (0.5f * currentSampleRate));
     smoothedDelay2.setTargetValue(d2 * (0.5f * currentSampleRate));
 
    //trigger for grains
-    trigger.frequency(bRate*20.0f); //nornmalize to 10hz
-    //trigger.frequency(5.0);
+    trigger.frequency(bRate*20.0f); //nornmalize to 20hz
 
     //ramp for clip player
     ramp.frequency(0.1f);
@@ -229,14 +250,12 @@ void AudioPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
         float delayedSample = delayLine.read(smoothedDelay.getNextValue());
         float delayedSample2 = delayLine2.read(smoothedDelay2.getNextValue());
 
-        float grainDelayL = delayedSample * leftGrainPan;
-        float grainDelayR = delayedSample2 * rightGrainPan;
+        float grainDelay1 = delayedSample * leftGrainPan;
+        float grainDelay2 = delayedSample2 * rightGrainPan;
 
-        float outL = ky::dbtoa(-60 * (1 - v)) * 
-        ((source * (1.0-gMix)) + (grainDelayL * (gMix)));
+        float outL = ky::dbtoa(-60 * (1 - v)) *  ((source * (1.0-gMix)) + (grainDelay1 * (gMix)));
 
-        float outR = ky::dbtoa(-60 * (1 - v))* 
-        ((source * (1.0-gMix)) + (grainDelayR * (gMix)));
+        float outR = ky::dbtoa(-60 * (1 - v))*  ((source * (1.0-gMix)) + (grainDelay2 * (gMix)));
         //float out = sample;
         buffer.addSample(0, i, outL);
         buffer.addSample(1, i, outR);

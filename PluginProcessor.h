@@ -9,6 +9,8 @@
 class AudioPluginAudioProcessor final : public juce::AudioProcessor {
  public:
   //==============================================================================
+  
+        
   AudioPluginAudioProcessor();
   ~AudioPluginAudioProcessor() override;
 
@@ -70,11 +72,15 @@ class AudioPluginAudioProcessor final : public juce::AudioProcessor {
   juce::SmoothedValue<float, juce::ValueSmoothingTypes::Linear> smoothedDelay2;
 
   std::unique_ptr<ky::ClipPlayer> player;
+
+
+   
   // juce::dsp::Convolution convolution;
 
   //==============================================================================
   JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(AudioPluginAudioProcessor)
   //GranularSlicer slicer; 
+  ky::Wander panWander{0.005f}; // ✅ Already constructed, but needs values at runtime
 };
 
 juce::AudioProcessorValueTreeState::ParameterLayout parameters();
