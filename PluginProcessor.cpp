@@ -9,23 +9,17 @@ juce::AudioProcessorValueTreeState::ParameterLayout parameters() {
       ParameterID{"gain", 1}, "Gain", -60.0, 0.0, -60.0));
 
   parameter_list.push_back(std::make_unique<juce::AudioParameterFloat>(
-      ParameterID{"frequency", 1}, "Frequency", 0.0, 127.0, 60.0));
-
+      ParameterID{"delay", 1}, "Delay", 0.0, 4.0, 0.1));
   parameter_list.push_back(std::make_unique<juce::AudioParameterFloat>(
-      ParameterID{"rate", 1}, "Rate", 0.0, 1.0, 0.0));
-
+      ParameterID{"delay2", 1}, "Delay2", 0.0, 4.0, 0.1));
   parameter_list.push_back(std::make_unique<juce::AudioParameterFloat>(
-      ParameterID{"delay", 1}, "Delay", 0.0, 2.0, 0.0));
-  parameter_list.push_back(std::make_unique<juce::AudioParameterFloat>(
-      ParameterID{"delay2", 1}, "Delay2", 0.0, 2.0, 0.0));
-  parameter_list.push_back(std::make_unique<juce::AudioParameterFloat>(
-      ParameterID{"grainLength", 1}, "grainLength", 0.0, 3.0, 0.0));
+      ParameterID{"grainLength", 1}, "grainLength", 0.0, 3.0, 0.5));
   parameter_list.push_back(std::make_unique<juce::AudioParameterFloat>(
       ParameterID{"grainSpeed", 1}, "grainSpeed", -3.0, 3.0, 0.0));
   parameter_list.push_back(std::make_unique<juce::AudioParameterFloat>(
-      ParameterID{"birthRate", 1}, "birthRate", 0.0, 20.0, 0.0));
+      ParameterID{"birthRate", 1}, "birthRate", 0.0, 60.0, 5));
   parameter_list.push_back(std::make_unique<juce::AudioParameterFloat>(
-      ParameterID{"grainMix", 1}, "grainMix", 0.0, 1.0, 0.4));
+      ParameterID{"grainMix", 1}, "grainMix", 0, 100, 50));
   parameter_list.push_back(std::make_unique<juce::AudioParameterFloat>(
       ParameterID{"grainPanLeft", 1}, "grainPanLeft", -1.0, 1.0,-0.5));
   parameter_list.push_back(std::make_unique<juce::AudioParameterFloat>(
@@ -213,8 +207,8 @@ void AudioPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
     DBG(leftGrainPan);
 
 
-    smoothedDelay.setTargetValue(d * (0.5f * currentSampleRate));
-    smoothedDelay2.setTargetValue(d2 * (0.5f * currentSampleRate));
+    smoothedDelay.setTargetValue(d * currentSampleRate);
+    smoothedDelay2.setTargetValue(d2 * currentSampleRate);
 
    //trigger for grains
     trigger.frequency(bRate*20.0f); //nornmalize to 20hz
@@ -238,7 +232,7 @@ void AudioPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
         //when trigger happens, add a grain at that buffer position
         if (trigger()) {
           if (intermittency() > 0.8) break;
-          granulator.add(where(), (gLen*3.0f), (-3.0f + (6.0*gSpeed)));
+          granulator.add(where(), (gLen*3.0f), gSpeed);
         }
     
         float source = sample;

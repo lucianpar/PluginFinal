@@ -14,22 +14,30 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor(
   attachment.push_back(
       std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
           processorRef.apvts, "gain", gainSlider));
-
+  delaySlider.setRange(0, 4.0f, 0.05f);
   attachment.push_back(
       std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
           processorRef.apvts, "delay", delaySlider));
+  
+  delaySlider2.setRange(0, 4.0f, 0.05f);
   attachment.push_back(
       std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
           processorRef.apvts, "delay2", delaySlider2));
+
+  grainLengthSlider.setRange(0.0f, 3.0f, 0.05f);
   attachment.push_back(
       std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
           processorRef.apvts, "grainLength", grainLengthSlider));
+
+  grainSpeedSlider.setRange(-3.0f, 3.0f, 0.1f);
   attachment.push_back(
       std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
           processorRef.apvts, "grainSpeed", grainSpeedSlider));
+  birthRateSlider.setRange(0.0f, 60.0f, 0.3f);
   attachment.push_back(
       std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
           processorRef.apvts, "birthRate", birthRateSlider));
+  grainMixSlider.setRange(0, 100, 1);
   attachment.push_back(
       std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
           processorRef.apvts, "grainMix", grainMixSlider));
