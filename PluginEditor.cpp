@@ -10,7 +10,7 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor(
 
 
 
-
+  gainSlider.setRange(-60.0f, 0.0f, 1.0f);
   attachment.push_back(
       std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
           processorRef.apvts, "gain", gainSlider));

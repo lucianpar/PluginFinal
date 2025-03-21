@@ -160,8 +160,12 @@ bool AudioPluginAudioProcessor::isBusesLayoutSupported(
 
 void AudioPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
                                              juce::MidiBuffer& midiMessages) {
+                                              
+                                            
     juce::ignoreUnused(midiMessages);
     juce::ScopedNoDenormals noDenormals;
+    
+
 
     auto totalNumInputChannels = getTotalNumInputChannels();
     auto totalNumOutputChannels = getTotalNumOutputChannels();
@@ -169,8 +173,10 @@ void AudioPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
         buffer.clear(i, 0, buffer.getNumSamples());
 
     //param variables
-    float v = apvts.getParameter("gain")->getValue();
-   
+    
+    
+    //float v = apvts.getParameter("gain")->getValue();
+    float v = *apvts.getRawParameterValue("gain");
     float gPanL = *apvts.getRawParameterValue("grainPanLeft");
     float gPanR = *apvts.getRawParameterValue("grainPanRight");
     float d = *apvts.getRawParameterValue("delay");
@@ -204,20 +210,27 @@ void AudioPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
     //ramp for clip player
     ramp.frequency(0.11f);
 
-
+    float scaledGain = (ky::dbtoa(v));
     for (int i = 0; i < buffer.getNumSamples(); ++i) {
         if (timer()) {
             env.set(0.05f, 0.3f);
         }
 
+        //float inputSample = buffer.getSample(0, i);
+        float inputSample = buffer.getReadPointer(0)[i];
+        //DBG(inputSample);
+
       
         //from clip player
 
-        float sample = player ? player->operator()(ramp()) : 0;
+        //float sample = player ? player->operator()(ramp()) : 0;
 
 
         trigger1.frequency(smoothedBirthRate.getNextValue());
        //trigger2.frequency(smoothedBirthRate.getNextValue()); - for now - just using one granulator group
+
+       float source = inputSample * scaledGain;
+        granulator.buffer.push_back(source);
 
         //when trigger happens, add a grain at that buffer position
         if (trigger1()) {
@@ -229,8 +242,9 @@ void AudioPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
         //   granulator2.add(where(), (gLen), gSpeed);
         // } -for now - just using one granulator group
     
-        float source = sample;
+        
         float x1 = granulator();
+        DBG(x1);
         // float x2 = granulator2(); - for now - just using one granulator group
         delayLine.write(x1);
         // delayLine2.write(x2); - for now - just using one granulator group
@@ -245,8 +259,13 @@ void AudioPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
 
         float mix = smoothedGrainMix.getNextValue();
 
-        float outL = ky::dbtoa(-60 * (1 - v)) *  ((source * (1.0-mix)) + (grainDelay1 * (mix)));
-        float outR = ky::dbtoa(-60 * (1 - v))*  ((source * (1.0-mix)) + (grainDelay2 * (mix)));
+        float outL =  scaledGain * (source * (1.0-mix)) + (grainDelay1 * (mix));
+        float outR = scaledGain * (source * (1.0-mix)) + (grainDelay2 * (mix));
+
+       
+  
+
+        //DBG(outL);
 
         outL = juce::jlimit(-1.0f, 1.0f, outL);//clamping vols
         outR = juce::jlimit(-1.0f, 1.0f, outR);
@@ -264,16 +283,16 @@ void AudioPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
 void AudioPluginAudioProcessor::setBuffer(
     std::unique_ptr<juce::AudioBuffer<float>> buffer) {
 
-  auto b = std::make_unique<ky::ClipPlayer>();
-  for (int i = 0; i < buffer->getNumSamples(); ++i) {
-    granulator.buffer.push_back(buffer->getSample(0, i));
-    if (buffer->getNumChannels() == 2) {
-       b->addSample(buffer->getSample(0, i) / 2 + buffer->getSample(1, i) / 2);
-     } else {
-       b->addSample(buffer->getSample(0, i));
-     }
-  }
-  player = std::move(b);
+  // auto b = std::make_unique<ky::ClipPlayer>();
+  // for (int i = 0; i < buffer->getNumSamples(); ++i) {
+  //   //granulator.buffer.push_back(buffer->getSample(0, i)); - was using this for file player input
+  //   if (buffer->getNumChannels() == 2) {
+  //      b->addSample(buffer->getSample(0, i) / 2 + buffer->getSample(1, i) / 2);
+  //    } else {
+  //      b->addSample(buffer->getSample(0, i));
+  //    }
+  // }
+  // player = std::move(b);
 }
 
 
