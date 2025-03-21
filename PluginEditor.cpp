@@ -8,9 +8,7 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor(
     : AudioProcessorEditor(&p), processorRef(p) {
   setSize(500, 400);
 
-
-
-  gainSlider.setRange(-60.0f, 0.0f, 1.0f);
+gainSlider.setRange(-60.0f, 0.0f, 1.0f);
   attachment.push_back(
       std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
           processorRef.apvts, "gain", gainSlider));
@@ -51,33 +49,53 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor(
       std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
           processorRef.apvts, "grainPanRight", grainPanRightSlider));
 
-  gainLabel.setText("Gain", juce::dontSendNotification);
-    gainLabel.attachToComponent(&gainSlider, false);
+ gainLabel.setText("Gain", juce::dontSendNotification);
+gainLabel.attachToComponent(&gainSlider, false);
+gainLabel.setColour(juce::Label::textColourId, juce::Colours::black);
+gainLabel.setFont(juce::Font(15.0f, juce::Font::bold));
 
-    delayLabel.setText("Delay", juce::dontSendNotification);
-    delayLabel.attachToComponent(&delaySlider, false);
+delayLabel.setText("Delay", juce::dontSendNotification);
+delayLabel.attachToComponent(&delaySlider, false);
+delayLabel.setColour(juce::Label::textColourId, juce::Colours::black);
+delayLabel.setFont(juce::Font(15.0f, juce::Font::bold));
 
-    delayLabel2.setText("Delay2", juce::dontSendNotification);
-    delayLabel2.attachToComponent(&delaySlider2, false);
+delayLabel2.setText("Delay2", juce::dontSendNotification);
+delayLabel2.attachToComponent(&delaySlider2, false);
+delayLabel2.setColour(juce::Label::textColourId, juce::Colours::black);
+delayLabel2.setFont(juce::Font(15.0f, juce::Font::bold));
 
-    grainLengthLabel.setText("Grain Length", juce::dontSendNotification);
-    grainLengthLabel.attachToComponent(&grainLengthSlider, false);
+grainLengthLabel.setText("Grain Length", juce::dontSendNotification);
+grainLengthLabel.attachToComponent(&grainLengthSlider, false);
+grainLengthLabel.setColour(juce::Label::textColourId, juce::Colours::black);
+grainLengthLabel.setFont(juce::Font(15.0f, juce::Font::bold));
 
-    grainSpeedLabel.setText("Grain Speed", juce::dontSendNotification);
-    grainSpeedLabel.attachToComponent(&grainSpeedSlider, false);
+grainSpeedLabel.setText("Grain Speed", juce::dontSendNotification);
+grainSpeedLabel.attachToComponent(&grainSpeedSlider, false);
+grainSpeedLabel.setColour(juce::Label::textColourId, juce::Colours::black);
+grainSpeedLabel.setFont(juce::Font(15.0f, juce::Font::bold));
 
-    birthRateLabel.setText("Birth Rate", juce::dontSendNotification);
-    birthRateLabel.attachToComponent(&birthRateSlider, false);
+birthRateLabel.setText("Birth Rate", juce::dontSendNotification);
+birthRateLabel.attachToComponent(&birthRateSlider, false);
+birthRateLabel.setColour(juce::Label::textColourId, juce::Colours::black);
+birthRateLabel.setFont(juce::Font(15.0f, juce::Font::bold));
 
-    grainMixLabel.setText("Grain Mix", juce::dontSendNotification);
-    grainMixLabel.attachToComponent(&grainMixSlider, false);
+grainMixLabel.setText("Grain Mix", juce::dontSendNotification);
+grainMixLabel.attachToComponent(&grainMixSlider, false);
+grainMixLabel.setColour(juce::Label::textColourId, juce::Colours::black);
+grainMixLabel.setFont(juce::Font(15.0f, juce::Font::bold));
 
-    grainPanLeftLabel.setText("Left Grains Pan", juce::dontSendNotification);
-    grainPanLeftLabel.attachToComponent(&grainPanLeftSlider, false);
+grainPanLeftLabel.setText("Left Grains Pan", juce::dontSendNotification);
+grainPanLeftLabel.attachToComponent(&grainPanLeftSlider, false);
+grainPanLeftLabel.setColour(juce::Label::textColourId, juce::Colours::black);
+grainPanLeftLabel.setFont(juce::Font(15.0f, juce::Font::bold));
 
-    grainPanRightLabel.setText("Right Grains Pan", juce::dontSendNotification);
-    grainPanRightLabel.attachToComponent(&grainPanRightSlider, false);
-    
+grainPanRightLabel.setText("Right Grains Pan", juce::dontSendNotification);
+grainPanRightLabel.attachToComponent(&grainPanRightSlider, false);
+grainPanRightLabel.setColour(juce::Label::textColourId, juce::Colours::black);
+grainPanRightLabel.setFont(juce::Font(15.0f, juce::Font::bold));
+
+
+
   
 
   addAndMakeVisible(gainSlider);
@@ -106,6 +124,19 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor(
 
   addAndMakeVisible(grainPanRightSlider);
   addAndMakeVisible(grainPanRightLabel);
+
+
+gainSlider.setColour(juce::Slider::textBoxTextColourId, juce::Colours::black);
+delaySlider.setColour(juce::Slider::textBoxTextColourId, juce::Colours::black);
+delaySlider2.setColour(juce::Slider::textBoxTextColourId, juce::Colours::black);
+grainLengthSlider.setColour(juce::Slider::textBoxTextColourId, juce::Colours::black);
+grainSpeedSlider.setColour(juce::Slider::textBoxTextColourId, juce::Colours::black);
+birthRateSlider.setColour(juce::Slider::textBoxTextColourId, juce::Colours::black);
+grainMixSlider.setColour(juce::Slider::textBoxTextColourId, juce::Colours::black);
+grainPanLeftSlider.setColour(juce::Slider::textBoxTextColourId, juce::Colours::black);
+grainPanRightSlider.setColour(juce::Slider::textBoxTextColourId, juce::Colours::black);
+
+
   
 
 
@@ -145,21 +176,37 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor(
 
 AudioPluginAudioProcessorEditor::~AudioPluginAudioProcessorEditor() {}
 
+#include <juce_graphics/juce_graphics.h>  // Ensure this is included in your .cpp or header
+
 void AudioPluginAudioProcessorEditor::paint(juce::Graphics& g) {
-  g.fillAll(
-      getLookAndFeel().findColour(juce::ResizableWindow::backgroundColourId));
+    juce::ColourGradient backgroundGradient(
+        juce::Colour(225, 255, 225), 0.0f, 0.0f,                      // bright white
+        juce::Colour(105, 180, 210), (float)getWidth(), (float)getHeight(), // soft gray-blue
+        false
+    );
+
+    g.setGradientFill(backgroundGradient);
+    g.fillAll();
+
+      // Title text
+    g.setColour(juce::Colours::black);  // Text color
+    g.setFont(juce::Font(22.0f, juce::Font::bold));  // Size and bold
+    g.drawFittedText("Wander Delay Prototype", getLocalBounds().removeFromTop(40), 
+                     juce::Justification::centred, 1);
 }
+
+
 
 void AudioPluginAudioProcessorEditor::resized() {
     auto area = getLocalBounds();
     auto height = 40;
 
-    int buttonWidth = 150;  
-    int buttonHeight = 20;  
+    // int buttonWidth = 150;  - for open button
+    // int buttonHeight = 20;  
     int topMargin = 20;  // Moves all elements down
 
     // Open Button Positioning
-    openButton.setBounds((area.getWidth() - buttonWidth) / 2, 10, buttonWidth, buttonHeight);
+    //openButton.setBounds((area.getWidth() - buttonWidth) / 2, 10, buttonWidth, buttonHeight);
 
     // Move content down
     area.removeFromTop(topMargin);
