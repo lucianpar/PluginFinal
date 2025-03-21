@@ -33,7 +33,7 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor(
   attachment.push_back(
       std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
           processorRef.apvts, "grainSpeed", grainSpeedSlider));
-  birthRateSlider.setRange(0.001f, 20.0f, 0.3f);
+  birthRateSlider.setRange(0.1f, 10.0f, 0.1f);
   attachment.push_back(
       std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
           processorRef.apvts, "birthRate", birthRateSlider));
